@@ -1,12 +1,37 @@
 #root {
   width:100%;
 }
+/* Slim modern in divs Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #333;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 10px;;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
 header {
   display: flex;
   flex: 0 0 100%;    flex: 0 0 100%;
   justify-content: space-between;
   padding: 1em;
   height:5vh;
+}
+input {
+  border-radius: 5px;
+  border: 1px solid #444;
+  padding: .5em 1em;
+  background: transparent;
 }
 header nav ul {
   display: flex;
@@ -40,15 +65,20 @@ aside{
   flex-direction: column;
   gap: 1em;
   width: 15%;
-  padding: 0 1em; 
   background:#555;
   height:94vh;
 }
-aside h2{
+aside h2 {
   text-align: center;
+  margin: 0;
+  padding: .5em;
+  background: #fff;
+  color: #444;
+}
+aside .content{
+  padding: 0 1em; 
 }
 #calendar{
   width: 70%;
-  background : #343434;
-  padding:1em;
+  padding:0 1em;
 }

@@ -1,8 +1,7 @@
 function Search(){
     return (
         <form>
-        <input type="search" placeholder="Search..." />
-        <button type="submit">Search</button>
+            <input type="search" placeholder="Search..." />
         </form>
     )
 }

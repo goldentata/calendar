@@ -6,9 +6,9 @@ import TaskModal from './TaskModal'
 function Main() {
     return (
       <main>
-        <Sidebar />
+        <Sidebar title="Chat"/>
         <Calendar />
-        <Sidebar>
+        <Sidebar title="Notes">
             <SingleNote />
             <SingleNote />
             <SingleNote />

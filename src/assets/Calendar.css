@@ -1,0 +1,90 @@
+
+.fc-day a.fc-event {
+    max-width: 95%;
+    text-align: left;
+    margin: 0px auto!important;
+    display: flex;
+    padding: 3px;
+    overflow: hidden;
+    text-wrap: wrap;
+    justify-content: flex-start;
+    gap: .5em;
+}
+.fc-day a.fc-event .fc-event-main span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.25em;
+}
+.fc .fc-daygrid-day-frame {
+    padding: 5px;
+}
+
+a{
+    color:#fff!important;
+}
+.fc-theme-standard td, .fc-theme-standard th {
+    border-color: #212121!important;
+    overflow: hidden;
+}
+.fc .fc-scrollgrid-liquid {
+    border-color: #212121;
+}
+.fc-daygrid-day {
+    background: #444;
+}
+.nav a.active {
+    font-weight: 900;
+    font-size: 1.1em;
+    margin-top: -.05em;
+}
+.card {
+    background: rgba(255,255,255,0.03);
+    color: #fff!important;
+    border: 1px solid #333;
+}.list-group-item label.form-check-label {
+    color: #eee;
+}
+#listsContainer {
+    padding: 0 15px;
+}
+.list-group-item {
+    background: #404040!important;
+    color: #fff!important;
+    border-color: #333;
+}
+.fc .fc-daygrid-day-number {
+    font-size: 3em;
+    font-weight: 900;
+    opacity: .1;
+    text-decoration: none;
+    position: absolute;
+    top: -25px;
+    right: -10px;
+}
+.buttons.generate_area {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding: 2em;
+    border: 1px solid #555;
+    background: #454545;
+    border-radius: 7px;
+}
+.fc-toolbar-chunk {
+    /* width: 100%; */
+    display: flex;
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 0;
+    padding-bottom: 2em;
+    background: #444444b0;
+    padding-top: .5em;
+    padding: 1em;
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+}
+tr.fc-scrollgrid-section.fc-scrollgrid-section-header {
+    background: #444444b0;
+}

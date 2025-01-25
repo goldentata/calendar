@@ -1,0 +1,45 @@
+#root {
+  width:100%;
+}
+header {
+  display: flex;
+  flex: 0 0 100%;    flex: 0 0 100%;
+  justify-content: space-between;
+  padding: 1em;
+}
+header nav ul {
+  display: flex;
+  gap: 1em;
+  list-style: none;
+  padding: 0;
+  align-items: center;
+  height:100%;
+  margin:0;
+}
+.rightSection{
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+main{
+  display:flex;
+  justify-content: space-around;
+}
+.modal{
+  position:fixed;
+  display:none;
+}
+footer{
+  text-align: center;
+  color:#444;
+}
+aside{
+  display:flex;
+  flex-direction: column;
+  gap: 1em;
+  width: 15%;
+}
+#calendar{
+  width: 70%;
+  background : #222;
+}

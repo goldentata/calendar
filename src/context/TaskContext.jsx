@@ -1,31 +1,27 @@
-import { createContext, useState } from 'react'
+import { createContext, useState, useEffect } from 'react';
 
-export const TaskContext = createContext()
+export const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
+    const [tasks, setTasks] = useState([]);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const [ selectedTask, setSelectedTask ] = useState(null)
-    const [ isModalOpen, setIsModalOpen ] = useState(false)
-
-    const tasks = [ 
-        { title: "Task 1", description: "Description 1", date: '2025-01-21' },
-        { title: "Task 2", description: "Description 2", date: '2025-01-22' },
-        { title: "Task 3", description: "Description 3", date: '2025-02-03' },
-    ]
+    useEffect(() => {
+        fetch('http://localhost:3000/tasks')
+            .then(response => response.json())
+            .then(data => setTasks(data))
+            .catch(error => console.log(error));
+    }, []);
 
     const openTaskModal = (task) => {
-        setSelectedTask(task)
-        setIsModalOpen(true)
-    }
+        setSelectedTask(task);
+        setIsModalOpen(true);
+    };
 
     return (
-        <TaskContext.Provider value={{     tasks, 
-            selectedTask, 
-            isModalOpen, 
-            setIsModalOpen,
-            openTaskModal  }}>
+        <TaskContext.Provider value={{ tasks, selectedTask, isModalOpen, setIsModalOpen, openTaskModal }}>
             {children}
         </TaskContext.Provider>
-    )
+    );
 }
-

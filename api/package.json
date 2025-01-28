@@ -1,0 +1,15 @@
+{
+  "name": "my-api",
+  "version": "1.0.0",
+  "description": "A Node.js backend for my app",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "author": "Your Name",
+  "license": "ISC"
+}

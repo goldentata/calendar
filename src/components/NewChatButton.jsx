@@ -5,7 +5,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
 
 function NewChatButton(){
-    const { setNewMessage } = useContext(ChatContext)
+    const { setNewMessage, setMessages } = useContext(ChatContext)
 
     function clearChat() {
         const message = ''
@@ -15,7 +15,10 @@ function NewChatButton(){
             method: 'DELETE'
         })
             .then(response => response.json())
-            .then(data => console.log(data))
+            .then(data => {
+                console.log(data)
+                setMessages([])
+            })
             .catch(error => console.error('Error clearing chat:', error))
     }
 

@@ -2,9 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
 const OpenAI = require('openai');
+const bodyParser = require('body-parser');
 const app = express();
 require('dotenv').config();
 
+app.use(bodyParser.json());
 app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
 
@@ -52,6 +54,7 @@ app.get('/chat', (req, res) => {
       res.status(500).send('Server error');
       return;
     }
+    console.log(rows);
     res.json(rows);
   });
 });
@@ -68,9 +71,86 @@ app.delete('/chat', (req, res) => {
   });
 });
 
+app.post('/chat-stream', async (req, res) => {
+  
+  const openai = new OpenAI();
+  const { message } = req.body;
+  let chatHistory = [];
+  db.all('SELECT * FROM chat_history ORDER BY id ASC', async (err, rows) => {
+    if (err) {
+      console.error('Error fetching chat history:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    chatHistory = rows.map(row => ({ role: 'user', content: row.message }));
+  
+  chatHistory.push({ role: 'user', content: message });
+  try {
+    var todays_date = new Date().toISOString().split('T')[0];
+    var day = new Date().getDay();
+    chatHistory.push({ role: 'system', content: 'The above is a conversation with an AI assistant. Try to keep your replies short, but helpful. If you do not have enough data to give an accurate answer please say so. This is a conversation so user will follow with answers. It is ' + todays_date + ' and it is ' + day + ' day of the week.' });
+
+    
+
+    // Required for chunked encoding in many Node/Express setups
+    // so the client receives partial chunks rather than buffering everything.
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    // Make a streaming request to OpenAI
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: chatHistory,
+      store: true, 
+      stream: true,
+    });
+
+    // We'll accumulate everything to store in DB at the end:
+    let fullText = '';
+
+    // Stream tokens back to the client as soon as they arrive
+    for await (const chunk of stream) {
+      const token = chunk.choices[0]?.delta?.content || '';
+      fullText += token;
+      // Write each token to the response immediately
+      res.write(token);
+    }
+
+
+    // insert to db
+    db.run(
+      'INSERT INTO chat_history (message, response) VALUES (?, ?)',
+      [message, fullText],
+      function (err) {
+        if (err) {
+          console.error('Error saving chat:', err);
+          res.status(500).send('Server error');
+          return;
+        }
+        var finalChunk = `\n[[DONE]]`;
+
+        //{ id, message, response }
+        finalChunk += `{ "id": ${this.lastID}, "message": "${message}", "response": "${fullText}" }`;
+        res.write(finalChunk);
+        res.end();
+      }
+    );
+
+    
+
+
+  } catch (error) {
+    console.error('Error in /chat-stream:', error);
+    res.status(500).send(error.message);
+  }
+});
+});
+
 // Endpoint to send message and get AI response
 app.post('/chat', async (req, res) => {
   const { message } = req.body;
+
+  
 
   // Fetch all previous messages
   let chatHistory = [];
@@ -98,9 +178,6 @@ app.post('/chat', async (req, res) => {
     const aiResponse = completion.choices[0].message.content;
     const formattedResponse = formatResponse(aiResponse);
 
-
-    console.log(aiResponse);
-    console.log(formattedResponse);
 
    
 
@@ -137,7 +214,6 @@ app.get('/tasks', (req, res) => {
       res.status(500).send('Server error');
       return;
     }
-    console.log(rows);
     res.json(rows);
   });
 });
@@ -145,7 +221,7 @@ app.get('/tasks', (req, res) => {
 // Endpoint to add a new task
 app.post('/tasks', (req, res) => {
   const { title, description, date, priority, date_completed, recurrency } = req.body;
-  console.log(req.body);
+
   db.run(
     'INSERT INTO tasks (title, description, date, priority, date_completed, recurrency) VALUES (?, ?, ?, ?, ?, ?)',
     [title, description, date, priority, date_completed, recurrency],
@@ -164,7 +240,7 @@ app.post('/tasks', (req, res) => {
 app.put('/tasks/:id', (req, res) => {
   const { id } = req.params;
   const { title, description, date, priority, date_completed, recurrency } = req.body;
-  console.log(req.body);
+
   db.run(
     'UPDATE tasks SET title = ?, description = ?, date = ?, priority = ?, date_completed = ?, recurrency = ? WHERE id = ?',
     [title, description, date, priority, date_completed, recurrency, id],

@@ -84,7 +84,7 @@ form div:first-child label {
 .fc-event.completed {
   background: green;
   border: green;
-  opacity: .5;
+  opacity: .75;
   transition: all .3s;
 }
 .inline.task_reminder {
@@ -336,8 +336,14 @@ button.delete {
 form.chat_input {
   display: flex;
   gap: .25em;
+  padding-bottom: 2em;
 }
-
+.live_response{
+  display:none;
+}
+.live_response.streaming{
+  display:block;
+}
 
 .newNoteButton, .newChatButton {
   

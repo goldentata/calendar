@@ -12,6 +12,10 @@ function Chat() {
     const [ isSending, setIsSending ] = useState(false)
     const inputRef = useRef(null)  // Add ref for input
 
+    const [liveResponse, setLiveResponse] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [tmpMessage, setTmpMessage] = useState('')
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
@@ -28,39 +32,104 @@ function Chat() {
             .catch(error => console.error('Error fetching chat:', error))
     }, [])
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
+  // Submit handler
 
-        setIsSending(true)
-        inputRef.current?.blur()  //
-        
-        fetch('http://localhost:3000/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ message: newMessage })
-        })
-            .then(response => response.json())
-            .then(data => {
-                setMessages(prevMessages => [...prevMessages, data])
-                setNewMessage('')
-                setIsSending(false)
-                inputRef.current?.focus() 
-            })
-            .catch(error => console.error('Error sending message:', error))
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSending(true);
+    setIsStreaming(true);
+    setLiveResponse('');
+    inputRef.current?.blur();
+
+    try {
+      // POST to our streaming endpoint
+      const response = await fetch('http://localhost:3000/chat-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: newMessage }),
+      });
+
+      setTmpMessage(newMessage);
+
+
+      // ReadableStream from `fetch`
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+
+      let accumulatedText = '';
+
+      // We'll read the stream chunk by chunk
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        // Decode chunk into text
+        const chunk = decoder.decode(value, { stream: true });
+
+        // Check if we have the special marker `[[DONE]]`
+        const doneMarkerIndex = chunk.indexOf('[[DONE]]');
+
+        if (doneMarkerIndex !== -1) {
+          // Everything before the marker is still AI tokens
+          const partialChunk = chunk.slice(0, doneMarkerIndex);
+          accumulatedText += partialChunk;
+          setLiveResponse(accumulatedText); // display partial if you like
+
+          // After the marker, we have our final JSON
+          const jsonPart = chunk.slice(doneMarkerIndex + '[[DONE]]'.length);
+
+          let finalObj;
+          try {
+            console.log(jsonPart);
+            finalObj = JSON.parse(jsonPart);
+          } catch (err) {
+            console.error('Error parsing final JSON:', err);
+          }
+
+          // finalObj should be your { id, message, response }
+          if (finalObj) {
+            setMessages((prev) => [...prev, finalObj]);
+            setIsStreaming(false);
+          }
+
+          // We’re done! No need to read further
+          reader.cancel();
+          break;
+        } else {
+          // If no marker, it's all tokens
+          accumulatedText += chunk;
+          // If you want "live streaming" in the UI:
+          setLiveResponse(accumulatedText);
+        }
+      }
+
+      // Clean up
+      reader.releaseLock();
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error streaming:', error);
+    } finally {
+      setIsSending(false);
+      inputRef.current?.focus();
     }
+  };
 
     return (
         <div className="chat_container">
             <NewChatButton />
             <div className="chat_history">
+            
                 {messages.map(msg => (
                     <div key={msg.id} className="chat_message" id={msg.id}>
                         <div className="user_message" dangerouslySetInnerHTML={{ __html: msg.message }}></div>
                         <div className="ai_response" dangerouslySetInnerHTML={{ __html: msg.response }}></div>
                     </div>
                 ))}
+
+                <div className={`live_response ${isStreaming ? 'streaming' : ''}`}>
+                     <div className="user_message">{tmpMessage}</div>
+                    <div className="ai_response">{liveResponse ? liveResponse : '...'}</div>
+                </div>
             </div>
             <div ref={messagesEndRef} />
             <form onSubmit={handleSubmit} className={`chat_input ${isSending ? 'sending' : ''}`}>

@@ -10,7 +10,7 @@ export function TaskProvider({ children }) {
 
 
     useEffect(() => {
-        fetch('http://localhost:3000/tasks')
+        fetch('/api/tasks')
             .then(response => response.json())
             .then(data => setTasks(data))
             .catch(error => console.error('Error fetching tasks:', error));

@@ -1,7 +1,7 @@
 {
   "name": "calendar",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,6 @@
     "start": "cd api && npm install && node app.js",
     "lint": "eslint .",
     "preview": "vite preview"
-    
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",

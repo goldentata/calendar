@@ -1,12 +1,11 @@
 {
   "name": "calendar",
   "private": true,
-  "version": "0.0.9",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "cd api && npm install && node app.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

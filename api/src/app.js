@@ -383,8 +383,9 @@ app.get('/', (req, res) => {
     res.send('Wrong endpoint!');
 });
 
+// Start the server
+app.listen(3000, () => {
+  console.log('Server started on port 3000');
+});
 
 
-
-// Export for Vercel
-module.exports = app;

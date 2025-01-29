@@ -55,7 +55,7 @@ events.forEach(event => {
             date: info.event.startStr
           }
           // PUT or PATCH request to update the task in your API
-          fetch(`http://localhost:3000/tasks/${updatedTask.id}`, {
+          fetch(`/api/tasks/${updatedTask.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'

@@ -26,7 +26,7 @@ function Chat() {
 
     useEffect(() => {
         // Load chat history
-        fetch('http://localhost:3000/chat')
+        fetch('/api/chat')
             .then(response => response.json())
             .then(data => setMessages(data))
             .catch(error => console.error('Error fetching chat:', error))
@@ -43,7 +43,7 @@ function Chat() {
 
     try {
       // POST to our streaming endpoint
-      const response = await fetch('http://localhost:3000/chat-stream', {
+      const response = await fetch('/api/chat-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: newMessage }),

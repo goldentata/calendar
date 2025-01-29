@@ -47,7 +47,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get('/chat', (req, res) => {
+app.get('/api/chat', (req, res) => {
   db.all('SELECT * FROM chat_history ORDER BY id ASC', (err, rows) => {
     if (err) {
       console.error('Error fetching chat:', err);
@@ -60,7 +60,7 @@ app.get('/chat', (req, res) => {
 });
 
 // clear chat
-app.delete('/chat', (req, res) => {
+app.delete('/api/chat', (req, res) => {
   db.run('DELETE FROM chat_history', function (err) {
     if (err) {
       console.error('Error deleting chat:', err);
@@ -71,7 +71,7 @@ app.delete('/chat', (req, res) => {
   });
 });
 
-app.post('/chat-stream', async (req, res) => {
+app.post('/api/chat-stream', async (req, res) => {
   
   const openai = new OpenAI();
   const { message } = req.body;
@@ -147,7 +147,7 @@ app.post('/chat-stream', async (req, res) => {
 });
 
 // Endpoint to send message and get AI response
-app.post('/chat', async (req, res) => {
+app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
   
@@ -219,7 +219,7 @@ app.get('/api/tasks', (req, res) => {
 });
 
 // Endpoint to add a new task
-app.post('/tasks', (req, res) => {
+app.post('/api/tasks', (req, res) => {
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
   db.run(
@@ -237,7 +237,7 @@ app.post('/tasks', (req, res) => {
 });
 
 // Endpoint to update an existing task
-app.put('/tasks/:id', (req, res) => {
+app.put('/api/tasks/:id', (req, res) => {
   const { id } = req.params;
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
@@ -256,7 +256,7 @@ app.put('/tasks/:id', (req, res) => {
 });
 
 // Endpoint to complete an existing task
-app.put('/tasks/:id/complete', (req, res) => {
+app.put('/api/tasks/:id/complete', (req, res) => {
   const { id } = req.params;
   const { date_completed } = req.body;
   db.run(
@@ -281,7 +281,7 @@ app.put('/tasks/:id/complete', (req, res) => {
 });
 
 // Endpoint to complete an existing task
-app.put('/tasks/:id/reschedule', (req, res) => {
+app.put('/api/tasks/:id/reschedule', (req, res) => {
   const { id } = req.params;
   const { date } = req.body;
   db.run(
@@ -306,7 +306,7 @@ app.put('/tasks/:id/reschedule', (req, res) => {
 });
 
 // Endpoint to delete a task
-app.delete('/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', (req, res) => {
     const { id } = req.params;
     db.run('DELETE FROM tasks WHERE id = ?', [id], function (err) {
       if (err) {
@@ -330,7 +330,7 @@ app.get('/api/notes', (req, res) => {
   });
 });
 
-app.post('/notes', (req, res) => {
+app.post('/api/notes', (req, res) => {
     const { title, content } = req.body;
     db.run(
         'INSERT INTO notes (title, content) VALUES (?, ?)',
@@ -347,7 +347,7 @@ app.post('/notes', (req, res) => {
     }
 );
 
-app.put('/notes/:id', (req, res) => {
+app.put('/api/notes/:id', (req, res) => {
     const { id } = req.params;
     const { title, content } = req.body;
     db.run(
@@ -365,7 +365,7 @@ app.put('/notes/:id', (req, res) => {
     }
 );
 
-app.delete('/notes/:id', (req, res) => {
+app.delete('/api/notes/:id', (req, res) => {
     const { id } = req.params;
     db.run('DELETE FROM notes WHERE id = ?', [id], function (err) {
         if (err) {
@@ -379,7 +379,7 @@ app.delete('/notes/:id', (req, res) => {
 );
 
 // routing path
-app.get('/', (req, res) => {
+app.get('/api/', (req, res) => {
     res.send('Wrong endpoint!');
 });
 

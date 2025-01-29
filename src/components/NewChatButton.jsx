@@ -11,7 +11,7 @@ function NewChatButton(){
         const message = ''
         setNewMessage(message)
 
-        fetch('http://localhost:3000/chat', {
+        fetch('/api/chat', {
             method: 'DELETE'
         })
             .then(response => response.json())

@@ -21,7 +21,7 @@ function NoteModal(props){
     const handleSubmit = () => {
         const updatedNote = { title, content }
         if(selectedNote.id){
-            fetch(`http://localhost:3000/notes/${selectedNote.id}`, {
+            fetch(`/api/notes/${selectedNote.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -35,7 +35,7 @@ function NoteModal(props){
             })
             .catch(error => console.error('Error updating note:', error))
         } else {
-            fetch('http://localhost:3000/notes', {
+            fetch('/api/notes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -53,7 +53,7 @@ function NoteModal(props){
 
     const handleDelete = () => {
         console.log(selectedNote);
-        fetch(`http://localhost:3000/notes/${selectedNote.id}`, {
+        fetch(`/api/notes/${selectedNote.id}`, {
             method: 'DELETE'
         })
         .then(() => {

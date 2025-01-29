@@ -84,7 +84,7 @@ export default function DailyCheckModal() {
     const date_completed = new Date().toISOString().split('T')[0];
     
         const updatedTask = {  date_completed: date_completed }
-        fetch(`http://localhost:3000/tasks/${selectedTask.id}/complete`, {
+        fetch(`http:///api/tasks/${selectedTask.id}/complete`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -103,7 +103,7 @@ export default function DailyCheckModal() {
   const handleReschedule = (selectedTask) => {
     var todays_date = new Date().toISOString().split('T')[0];
     const updatedTask = { date: todays_date }
-    fetch(`http://localhost:3000/tasks/${selectedTask.id}/reschedule`, {
+    fetch(`/api/tasks/${selectedTask.id}/reschedule`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'

@@ -43,7 +43,7 @@ function TaskModal() {
 
     if (selectedTask.id) {
       // Update existing task
-      fetch(`http://localhost:3000/tasks/${selectedTask.id}`, {
+      fetch(`/api/tasks/${selectedTask.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -58,7 +58,7 @@ function TaskModal() {
         .catch(error => console.error('Error updating task:', error))
     } else {
       // Create new task
-      fetch('http://localhost:3000/tasks', {
+      fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -76,7 +76,7 @@ function TaskModal() {
 
   const handleCompleted = (date_completed) => {
     const updatedTask = { title, description, date , priority, date_completed: date_completed, recurrency }
-    fetch(`http://localhost:3000/tasks/${selectedTask.id}`, {
+    fetch(`/api/tasks/${selectedTask.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -94,7 +94,7 @@ function TaskModal() {
 
   const handleIncomplete = (date_completed) => {
     const updatedTask = { title, description, date , priority, date_completed: date_completed, recurrency, id: selectedTask.id }
-    fetch(`http://localhost:3000/tasks/${selectedTask.id}`, {
+    fetch(`/api/tasks/${selectedTask.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -111,7 +111,7 @@ function TaskModal() {
   }
 
   const handleDelete = () => {
-    fetch(`http://localhost:3000/tasks/${selectedTask.id}`, {
+    fetch(`/api/tasks/${selectedTask.id}`, {
       method: 'DELETE'
     })
       .then(() => {

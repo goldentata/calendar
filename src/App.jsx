@@ -6,8 +6,10 @@ import Footer from './components/Footer'
 import { NoteProvider } from './context/NoteContext'
 import { TaskProvider } from './context/TaskContext'
 import { ChatProvider } from './context/ChatContext'
-
 function App() {
+
+
+
   return (
     <>
     

@@ -9,7 +9,7 @@ export function NoteProvider({ children }) {
 
 
     useEffect(() => {
-        fetch('http://localhost:3000/notes')
+        fetch('/api/notes')
             .then(response => response.json())
             .then(data => setNotes(data))
             .catch(error => console.log(error))

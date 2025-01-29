@@ -7,11 +7,14 @@ export function TaskProvider({ children }) {
     const [selectedTask, setSelectedTask] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+
+    console.log(tasks)
+
     useEffect(() => {
         fetch('http://localhost:3000/tasks')
             .then(response => response.json())
             .then(data => setTasks(data))
-            .catch(error => console.log(error));
+            .catch(error => console.error('Error fetching tasks:', error));
     }, []);
 
     const openTaskModal = (task) => {
@@ -19,8 +22,13 @@ export function TaskProvider({ children }) {
         setIsModalOpen(true);
     };
 
+    const openEmptyTaskModal = (date) => {
+        setSelectedTask({ id: '', title: '', description: '', date, priority: '', date_completed: '', recurrency: '' });
+        setIsModalOpen(true);
+    };
+
     return (
-        <TaskContext.Provider value={{ tasks, selectedTask, isModalOpen, setIsModalOpen, openTaskModal }}>
+        <TaskContext.Provider value={{ tasks, setTasks, selectedTask, isModalOpen, setIsModalOpen, openTaskModal, openEmptyTaskModal }}>
             {children}
         </TaskContext.Provider>
     );

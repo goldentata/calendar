@@ -67,10 +67,28 @@ main{
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
-
+input, select, textarea {
+  display: block;
+  width: -webkit-fill-available;
+  background: transparent;
+  margin-bottom: 10px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  padding: 1em;
+}
+.modal-content h2 {
+  margin-top: 0;
+}
 .modal.show {
   opacity: 1;
   pointer-events: auto;
+}
+button.self_right {
+  margin-left: auto;
+}
+.buttons {
+  display: flex;
+  gap: 1em;
 }
 
 .modal-content {
@@ -142,4 +160,14 @@ aside .content{
 #calendar{
   width: 70%;
   padding:0 1em;
+}
+
+.buttons{
+  margin-top:1.5em;
+}
+button[type="submit"] {
+  background: #3788d8;
+}
+button.delete {
+  background: #a13232;
 }

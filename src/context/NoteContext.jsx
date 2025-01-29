@@ -21,8 +21,18 @@ export function NoteProvider({ children }) {
         setIsModalOpen(true)
     }
 
+    const newNoteModal = () => {
+        console.log('newNoteModal')
+        setSelectedNote({
+            id: '',
+            title: '',
+            content: ''
+        })
+        setIsModalOpen(true)
+    }
+
     return (
-        <NoteContext.Provider value={{ notes, selectedNote, isModalOpen, setIsModalOpen, openNoteModal }}>
+        <NoteContext.Provider value={{ notes, selectedNote, isModalOpen, setIsModalOpen, openNoteModal, setNotes, newNoteModal }}>
             {children}
         </NoteContext.Provider>
     )

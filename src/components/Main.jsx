@@ -6,6 +6,9 @@ import SingleNote from './SingleNote'
 import TaskModal from './TaskModal'
 import NoteModal from './NoteModal'
 import NewNoteButton from './NewNoteButton'
+import DailyCheckModal from './DailyCheckModal'
+import Chat from './Chat'
+
 
 function Main() {
  const {notes, newNoteModal} = useContext(NoteContext);
@@ -13,7 +16,9 @@ function Main() {
 
     return (
       <main>
-        <Sidebar title="Chat"/>
+        <Sidebar title="Chat">
+          <Chat/>
+        </Sidebar>
         <Calendar />
         <Sidebar title="Notes" >
           <NewNoteButton onClick={newNoteModal} />
@@ -27,6 +32,7 @@ function Main() {
             ))}
         </Sidebar>
         <TaskModal />
+        <DailyCheckModal />
         <NoteModal />
       </main>
     )

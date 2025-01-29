@@ -27,6 +27,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
       )
     `);
 
+    db.run(`
+      CREATE TABLE IF NOT EXISTS chat_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message TEXT NOT NULL,
+        response TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Insert dummy data If there are not any yet
     db.run(`SELECT * FROM tasks`, (err, rows) => {
       if (err) {

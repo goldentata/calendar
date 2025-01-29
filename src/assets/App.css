@@ -12,14 +12,99 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #ddd;
   border-radius: 10px;;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #777;
 }
+.inline {
+  display: flex;
+  gap: .25em
+}
+form div:first-child label {
+  margin: 0;
+}
+.modal-header{
+  background:#666;
+}
+.btn-primary{
+  background-color: #3788d8;
+}
+.btn-success{
+  background:#069b06
+}
+.btn-danger{
+  background:#a13232;
+}
 
+.fc-event.High:before {
+  background: #a13232;
+  border-left:10px solid #942d2d;
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  top: 0;
+  transition: all .3s;
+}
+.fc-event.Medium:before {
+  background: #f0a500;
+  border-left:10px solid #d39102;
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  top: 0;
+  transition: all .3s;
+}
+.fc-event.Low:before {
+  background: #3788d8;
+  border-left:10px solid #2a76c2;
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  top: 0;
+  transition: all .3s;
+}
+.fc-event {
+  position: relative;
+  border:none;
+  padding-left:14px!important;
+  font-size: .7em!important;
+}
+.fc-event:hover:before{
+  width:100%!important;
+}
+.fc-event.completed {
+  background: green;
+  border: green;
+  opacity: .5;
+  transition: all .3s;
+}
+.inline.task_reminder {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #444;
+  padding: .5em;
+  border-radius: 8px;
+}
+.inline.task_reminder .buttons{
+  margin:0;
+  gap: .5em;
+}
+.fc-event.completed:hover {
+  opacity: 1
+}
+.fc-event{
+  cursor: pointer;
+}
 header {
   display: flex;
   flex: 0 0 100%;    flex: 0 0 100%;
@@ -70,14 +155,24 @@ main{
 input, select, textarea {
   display: block;
   width: -webkit-fill-available;
-  background: transparent;
-  margin-bottom: 10px;
+  background: #444;
   border: 1px solid #444;
   border-radius: 5px;
   padding: 1em;
+  font-family: system-ui;
+
+}
+label {
+  margin-top: 10px;
+  display: block;
+  font-size: .5em;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
 }
 .modal-content h2 {
-  margin-top: 0;
+  margin: 0;
 }
 .modal.show {
   opacity: 1;
@@ -91,12 +186,47 @@ button.self_right {
   gap: 1em;
 }
 
+.modal-body{
+  padding: 2em;
+}
+.modal-header.Low {
+  background: #3788d8;
+}
+.modal-header.Medium {
+  background: #f0a500;
+}
+.modal-header.High {
+  background: #a13232;
+}
+.modal-header{
+  padding: 2em;
+}
+
+
 .modal-content {
   background: #333;
-  padding: 2em;
   border-radius: 8px;
   max-width: 500px;
   width: 90%;
+  overflow: hidden;
+  box-shadow: 0 0 10px 10px #00000036;
+}
+.user_message {
+  width: 80%;
+  background: #3788d8;
+  padding: .25em .5em;
+  border-radius: 7px;
+  margin-left: auto;
+}
+
+.ai_response {
+  width: 80%;
+  background: #444;
+  padding: .25em .5em;
+  border-radius: 7px;
+  margin-right: auto;
+  margin-top: .5em;
+  margin-bottom: 1em;
 }
 footer{
   text-align: center;
@@ -105,7 +235,13 @@ footer{
 .user-menu {
   position: relative;
 }
+.single-note{
+  cursor:pointer;
 
+}
+.single-note h3{
+  margin:0;
+}
 .user-menu button {
   background: none;
   border: none;
@@ -139,13 +275,36 @@ footer{
 .dropdown-menu button:hover {
   background: #444;
 }
+
+.chat_container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.chat_message p {
+  margin-top: 0;
+}
+form.chat_input.sending {
+  pointer-events: none;
+  opacity: .4;
+  filter: blur(1px);
+}
+.chat_message p {
+  margin-top: 0;
+}
+.chat_message:last-child p {
+  margin-bottom: 0;
+}
 aside{
   display:flex;
   flex-direction: column;
-  gap: 1em;
-  width: 15%;
+  width: 20%;
   background:#555;
-  height:94vh;
+  height:85vh;
+  position:relative;
+  border-radius: 5px;
+  overflow: hidden;
 }
 aside h2 {
   text-align: center;
@@ -155,10 +314,12 @@ aside h2 {
   color: #444;
 }
 aside .content{
-  padding: 0 1em; 
+  padding: 1em; 
+  height:100%;
+  overflow: auto;
 }
 #calendar{
-  width: 70%;
+  width: 60%;
   padding:0 1em;
 }
 
@@ -170,4 +331,31 @@ button[type="submit"] {
 }
 button.delete {
   background: #a13232;
+}
+
+form.chat_input {
+  display: flex;
+  gap: .25em;
+}
+
+
+.newNoteButton, .newChatButton {
+  
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  background: #000;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 100%;
+  font-weight: 800;
+}
+.fc-scrollgrid .fc-day a.fc-event {
+  margin-bottom: 3px!important;
 }

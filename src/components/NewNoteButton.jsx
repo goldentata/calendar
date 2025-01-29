@@ -8,7 +8,7 @@ function NewNoteButton(){
     const { notes, newNoteModal } = useContext(NoteContext)
 
     return (
-        <div onClick={() => newNoteModal()} style={{ cursor: 'pointer' }}>
+        <div className="newNoteButton" onClick={() => newNoteModal()} style={{ cursor: 'pointer' }}>
             <FontAwesomeIcon icon={faPlus} />
         </div>
     )

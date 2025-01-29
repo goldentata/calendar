@@ -8,7 +8,6 @@ export function TaskProvider({ children }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
 
-    console.log(tasks)
 
     useEffect(() => {
         fetch('http://localhost:3000/tasks')

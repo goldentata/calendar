@@ -30,7 +30,7 @@ function NoteModal(props){
             })
             .then(response => response.json())
             .then(data => {
-                setNotes(prevNotes => prevNotes.map(note => (note.id === data.id ? data : note)))
+                setNotes(prevNotes => prevNotes.map(note => (note.id == data.id ? data : note)))
                 setIsModalOpen(false)
             })
             .catch(error => console.error('Error updating note:', error))
@@ -44,7 +44,7 @@ function NoteModal(props){
             })
             .then(response => response.json())
             .then(data => {
-                setNotes(prevNotes => [...prevNotes, data])
+                setNotes(prevNotes => [data, ...prevNotes])
                 setIsModalOpen(false)
             })
             .catch(error => console.error('Error saving note:', error))
@@ -66,7 +66,10 @@ function NoteModal(props){
     return (
         <div className={`modal ${isModalOpen ? 'show' : ''}`} id="noteModal">
             <div className="modal-content">
+                <div className='modal-header'>
             <h2>{selectedNote.id ? 'Edit Note' : 'New Note'}</h2>
+            </div>
+            <div className="modal-body">
                 <label>Title</label>
                 <input type="text"
                     value={title} 
@@ -80,6 +83,7 @@ function NoteModal(props){
                 <button type="submit" onClick={() => handleSubmit()}>Save</button>  
                 <button  className="delete"  onClick={() => handleDelete()}>Delete</button>  
                 <button className="self_right" onClick={() => setIsModalOpen(false)}>Close Modal</button>
+                </div>
                 </div>
             </div>
         </div>

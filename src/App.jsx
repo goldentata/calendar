@@ -5,11 +5,13 @@ import Main from './components/Main'
 import Footer from './components/Footer'
 import { NoteProvider } from './context/NoteContext'
 import { TaskProvider } from './context/TaskContext'
+import { ChatProvider } from './context/ChatContext'
 
 function App() {
   return (
     <>
     
+    <ChatProvider>
     <TaskProvider>
     <NoteProvider>
     <div className="App">
@@ -19,6 +21,7 @@ function App() {
     </div>
     </NoteProvider>
     </TaskProvider>
+    </ChatProvider>
     </>
   )
 }

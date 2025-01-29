@@ -207,7 +207,7 @@ app.post('/chat', async (req, res) => {
 });
 
 // Endpoint for tasks
-app.get('/tasks', (req, res) => {
+app.get('/api/tasks', (req, res) => {
   db.all('SELECT * FROM tasks', (err, rows) => {
     if (err) {
       console.error('Error fetching tasks:', err);
@@ -319,7 +319,7 @@ app.delete('/tasks/:id', (req, res) => {
   });
 
 // Endpoint for notes
-app.get('/notes', (req, res) => {
+app.get('/api/notes', (req, res) => {
   db.all('SELECT * FROM notes ORDER BY id DESC', (err, rows) => {
     if (err) {
       console.error('Error fetching notes:', err);

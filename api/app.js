@@ -12,6 +12,9 @@ app.use(express.json()); // Parse JSON bodies
 
 const endpointStructure = process.env.ENDPOINT_STRUCTURE;
 
+console.log('Endpoint structure:', endpointStructure);
+
+
 // Configure OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

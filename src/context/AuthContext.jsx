@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react'
+import { createContext, useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -8,56 +8,82 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    // Use getSession() to retrieve the current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session || null)  // Store full session instead of just user
+    const [user, setUser] = useState(null);
+    const initRef = useRef(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showSignupModal, setShowSignupModal] = useState(false);
   
-      // Listen for auth state changes
-      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        setUser(session || null)  // Store full session instead of just user
+    useEffect(() => {
+        if (initRef.current) return;
+        initRef.current = true;
+  
+        const savedSession = localStorage.getItem('session');
+        if (savedSession) {
+            setUser(JSON.parse(savedSession));
+            setShowLoginModal(false);
+            return;
+        }
+  
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                localStorage.setItem('session', JSON.stringify(session));
+                setUser(session);
+                setShowLoginModal(false);
+            } else {
+                setShowLoginModal(true);
+            }
+        });
+    }, []);
+
+  const signUp = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password 
       })
-  
-      return () => {
-        authListener.subscription.unsubscribe()
+      if (error) throw error
+      if (data.session) {
+        localStorage.setItem('session', JSON.stringify(data.session))
+        setUser(data.session)
       }
-    })
-  }, [])
-
+      return data
+    } catch (error) {
+      console.error('Sign up error:', error)
+      throw error
+    }
+  }
+  
   const signIn = async (email, password) => {
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({ 
-            email, 
-            password 
-        })
-        if (error) {
-            console.log('Sign in error details:', error)
-            throw error
-        }
-        console.log('Sign in successful:', data)
-        setUser(data.session) // Store the full session instead of just user
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      localStorage.setItem('session', JSON.stringify(data.session))
+      setUser(data.session)
+      return data
     } catch (error) {
-        console.error('Full sign in error:', error)
-        throw error
+      console.error('Sign in error:', error)
+      throw error
     }
-}
-  const signUp = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-
-    if (error) throw error
-    setUser(data.user)
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    localStorage.removeItem('session')
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ 
+        user, 
+        signIn, 
+        signOut, 
+        signUp,
+        showLoginModal,
+        setShowLoginModal,
+        showSignupModal,
+        setShowSignupModal
+      }}>
+        {children}
+      </AuthContext.Provider>
   )
 }

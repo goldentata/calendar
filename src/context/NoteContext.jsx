@@ -9,20 +9,29 @@ export function NoteProvider({ children }) {
   const [selectedNote, setSelectedNote] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { user } = useContext(AuthContext)
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-        console.log('Fetching notes for user:', user)
-      fetch(endpointStructure + '/notes', {
-        headers: {
-          'Authorization': `Bearer ${user.access_token}` // Add this
-        }
-      })
-      .then(response => response.json())
-      .then(data => setNotes(data))
-      .catch(error => console.log(error))
-    }
-  }, [user])
+      async function fetchNotes() {
+          if (!user || !isLoading) return;
+
+          try {
+              const response = await fetch(endpointStructure + '/notes', {
+                  headers: {
+                      'Authorization': `Bearer ${user.access_token}`
+                  }
+              });
+              const data = await response.json();
+              setNotes(data);
+          } catch (error) {
+              console.error('Error fetching notes:', error);
+          } finally {
+              setIsLoading(false);
+          }
+      }
+
+      fetchNotes();
+  }, [user, isLoading]);
 
   const openNoteModal = (note) => {
     setSelectedNote(note)

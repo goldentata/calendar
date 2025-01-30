@@ -5,36 +5,32 @@ import { AuthContext } from '../context/AuthContext'
 import { Link } from 'react-router-dom'
 
 function UserMenu() {
-  const { user, signOut } = useContext(AuthContext)
-  const [isOpen, setIsOpen] = useState(false)
-
-  const toggleMenu = () => {
-    setIsOpen(!isOpen)
-  }
-
-  return (
-    <div className="user-menu" onClick={toggleMenu}>
-      <div>
-        <FontAwesomeIcon icon={faUser} />
-      </div>
-      {isOpen && (
-        <div className="dropdown-menu">
-          <ul>
+    const { user, signOut, setShowLoginModal, setShowSignupModal } = useContext(AuthContext)
+    const [isOpen, setIsOpen] = useState(false)
+  
+    const toggleMenu = () => {
+      setIsOpen(!isOpen)
+    }
+  
+    return (
+      <div className="user-menu" onClick={toggleMenu}>
+        <div>
+          <FontAwesomeIcon icon={faUser} />
+        </div>
+        {isOpen && (
+          <div className="dropdown-menu">
             {user ? (
-              <>
-                <li><button onClick={signOut}>Logout</button></li>
-              </>
+              <button onClick={signOut}>Logout</button>
             ) : (
               <>
-                <li><Link to="/login">Login</Link></li>
-                <li><Link to="/signup">Sign Up</Link></li>
+                <button onClick={() => setShowLoginModal(true)}>Login</button>
+                <button onClick={() => setShowSignupModal(true)}>Sign Up</button>
               </>
             )}
-          </ul>
-        </div>
-      )}
-    </div>
-  )
-}
+          </div>
+        )}
+      </div>
+    )
+  }
 
 export default UserMenu

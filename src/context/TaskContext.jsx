@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from './AuthContext'
 
 export const TaskContext = createContext();
@@ -11,20 +11,36 @@ export function TaskProvider({ children }) {
   const { user } = useContext(AuthContext)
 
 
+  const [isLoading, setIsLoading] = useState(true);
+    const initRef = useRef(false);
+    useEffect(() => {
+        if (!user || initRef.current) return;
+        initRef.current = true;
 
-  useEffect(() => {
-    if (user) {
-      fetch(endpointStructure + '/tasks', {
-        headers: {
-          'Authorization': `Bearer ${user.access_token}` // Add this
-        }
-      })
-      .then(response => response.json())
-      .then(data => setTasks(data))
-      .catch(error => console.log(error))
-    }
-  }, [user])
+        const fetchTasks = async () => {
+            try {
+                const response = await fetch(endpointStructure + '/tasks', {
+                    headers: {
+                        'Authorization': `Bearer ${user.access_token}`
+                    }
+                });
+                const data = await response.json();
+                setTasks(data);
+                localStorage.setItem('cachedTasks', JSON.stringify(data));
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
+        fetchTasks();
+    }, [user]);
+
+
+    const refreshTasks = () => {
+        setIsLoading(true);
+    };
 
     const openTaskModal = (task) => {
         setSelectedTask(task);
@@ -37,7 +53,7 @@ export function TaskProvider({ children }) {
     };
 
     return (
-        <TaskContext.Provider value={{ tasks, setTasks, selectedTask, isModalOpen, setIsModalOpen, openTaskModal, openEmptyTaskModal }}>
+        <TaskContext.Provider value={{ tasks, setTasks, selectedTask, isModalOpen, setIsModalOpen, openTaskModal, openEmptyTaskModal, refreshTasks }}>
             {children}
         </TaskContext.Provider>
     );

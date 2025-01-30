@@ -249,7 +249,15 @@ footer{
   padding: 5px;
   cursor: pointer;
 }
-
+p.error {
+  text-align: center;
+  background: #942d2d;
+  padding: 1em;
+  margin-top: 0;
+  border-radius: 10px;
+  font-weight: 600;
+  font-family: system-ui;
+}
 .dropdown-menu {
   position: absolute;
   right: 0;

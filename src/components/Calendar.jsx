@@ -1,7 +1,10 @@
 import FullCalendar from '@fullcalendar/react'
+import { useWindowSize } from '../hooks/useWindowSize'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import rrulePlugin from '@fullcalendar/rrule'
+import timeGridPlugin from '@fullcalendar/timegrid' // Add this import
+
 import { useContext } from 'react'
 import { TaskContext } from '../context/TaskContext'
 import { AuthContext } from '../context/AuthContext'
@@ -10,6 +13,7 @@ const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function Calendar() {
   const { tasks, openTaskModal, openEmptyTaskModal, setTasks } = useContext(TaskContext)
   const { user } = useContext(AuthContext)
+  const isMobile = useWindowSize()
   
 
 
@@ -96,8 +100,8 @@ const getEventTitle = (task) => {
   return (
     <section id="calendar">
       <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin, rrulePlugin]}
-        initialView="dayGridMonth"
+        plugins={[dayGridPlugin, interactionPlugin, rrulePlugin, timeGridPlugin]}
+        initialView={isMobile ? "timeGridDay" : "dayGridMonth"}
         events={transformEvents(tasks)}
         eventClick={(info) => {
           const taskData = {

@@ -374,3 +374,21 @@ form.chat_input {
 .fc-scrollgrid .fc-day a.fc-event {
   margin-bottom: 3px!important;
 }
+
+@media (max-width: 768px) {
+  main {
+    flex-direction: column;
+    gap:1em;
+  }
+  aside{
+    width:100%;
+    order:2;
+  }
+  #calendar{
+    margin-top:1em;
+    width: 100%;
+    padding:0;
+    order:1;
+  }
+}
+

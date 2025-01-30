@@ -3,7 +3,7 @@ import { AuthContext } from './AuthContext'
 
 export const TaskContext = createContext();
 
-const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
+const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 export function TaskProvider({ children }) {
     const [tasks, setTasks] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);

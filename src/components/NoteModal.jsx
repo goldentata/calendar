@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react'
 import { NoteContext  } from '../context/NoteContext';
 import { AuthContext } from '../context/AuthContext';
 
-const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
+const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function NoteModal(props){
     
     const { selectedNote, isModalOpen, setIsModalOpen, setNotes } = useContext(NoteContext)

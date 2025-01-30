@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faQuestion, faCalendar } from '@fortawesome/free-solid-svg-icons'
 import { AuthContext } from '../context/AuthContext'
 
-const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
+const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 export default function DailyCheckModal() {
   const { user } = useContext(AuthContext)
   const { tasks, setTasks } = useContext(TaskContext)

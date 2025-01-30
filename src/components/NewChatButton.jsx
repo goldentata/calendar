@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { AuthContext } from '../context/AuthContext'
 
-const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
+const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 
 function NewChatButton(){
     const { setNewMessage, setMessages } = useContext(ChatContext)

@@ -6,7 +6,7 @@ import  NewChatButton  from './NewChatButton'
 import { AuthContext } from '../context/AuthContext'
 
 
-const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
+const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 
 
 function Chat() {

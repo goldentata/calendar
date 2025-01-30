@@ -4,10 +4,12 @@ import interactionPlugin from '@fullcalendar/interaction'
 import rrulePlugin from '@fullcalendar/rrule'
 import { useContext } from 'react'
 import { TaskContext } from '../context/TaskContext'
+import { AuthContext } from '../context/AuthContext'
 
-const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
+const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function Calendar() {
   const { tasks, openTaskModal, openEmptyTaskModal, setTasks } = useContext(TaskContext)
+  const { user } = useContext(AuthContext)
   
   // Map tasks to calendar events format
   const events = tasks.map(task => ({
@@ -60,7 +62,8 @@ events.forEach(event => {
           fetch(endpointStructure+`/tasks/${updatedTask.id}`, {
             method: 'PUT',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${user.access_token}`
             },
             body: JSON.stringify(updatedTask)
           })

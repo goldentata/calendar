@@ -7,8 +7,8 @@ function SingleNote({ id, title, content }){
 
     return (
         <div onClick={() => openNoteModal({ id, title, content })} className="single-note">
-            <h3>{title || "Note Title"}</h3>
-            <p>{content || "Note Content"}</p>
+            <h3 >{title || "Note Title"}</h3>
+            <p dangerouslySetInnerHTML={{ __html: content }}></p>
         </div>
     )
 }

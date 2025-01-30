@@ -3,7 +3,9 @@ import { TaskContext } from '../context/TaskContext'
 import { ChatContext } from '../context/ChatContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faQuestion, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { AuthContext } from '../context/AuthContext'
 
+const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function TaskModal() {
   const { selectedTask, isModalOpen, setIsModalOpen, setTasks } = useContext(TaskContext)
   const [title, setTitle] = useState('')
@@ -14,6 +16,7 @@ function TaskModal() {
   const [date_completed, setDateCompleted] = useState('')
   const [recurrency, setRecurrency] = useState('')
   const { setNewMessage } = useContext(ChatContext)
+  const { user } = useContext(AuthContext)
 
 
   function helpWithChat(selectedTask) {
@@ -43,10 +46,11 @@ function TaskModal() {
 
     if (selectedTask.id) {
       // Update existing task
-      fetch(`/api/tasks/${selectedTask.id}`, {
+      fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.access_token}` 
         },
         body: JSON.stringify(updatedTask)
       })
@@ -58,10 +62,11 @@ function TaskModal() {
         .catch(error => console.error('Error updating task:', error))
     } else {
       // Create new task
-      fetch('/api/tasks', {
+      fetch(endpointStructure+'/tasks', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.access_token}`
         },
         body: JSON.stringify(updatedTask)
       })
@@ -76,10 +81,11 @@ function TaskModal() {
 
   const handleCompleted = (date_completed) => {
     const updatedTask = { title, description, date , priority, date_completed: date_completed, recurrency }
-    fetch(`/api/tasks/${selectedTask.id}`, {
+    fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.access_token}`
       },
       body: JSON.stringify(updatedTask)
     })
@@ -94,10 +100,11 @@ function TaskModal() {
 
   const handleIncomplete = (date_completed) => {
     const updatedTask = { title, description, date , priority, date_completed: date_completed, recurrency, id: selectedTask.id }
-    fetch(`/api/tasks/${selectedTask.id}`, {
+    fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.access_token}` 
       },
       body: JSON.stringify(updatedTask)
     })
@@ -111,8 +118,11 @@ function TaskModal() {
   }
 
   const handleDelete = () => {
-    fetch(`/api/tasks/${selectedTask.id}`, {
-      method: 'DELETE'
+    fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}` 
+      },
     })
       .then(() => {
         setTasks(prevTasks => prevTasks.filter(task => task.id != selectedTask.id))

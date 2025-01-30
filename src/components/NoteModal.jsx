@@ -1,12 +1,16 @@
 import { useState, useContext, useEffect } from 'react'
 import { NoteContext  } from '../context/NoteContext';
+import { AuthContext } from '../context/AuthContext';
 
+const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function NoteModal(props){
     
     const { selectedNote, isModalOpen, setIsModalOpen, setNotes } = useContext(NoteContext)
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
     const [id, setId] = useState('')
+    const { user } = useContext(AuthContext)
+
 
     useEffect(() => {
         if (selectedNote) {
@@ -21,10 +25,11 @@ function NoteModal(props){
     const handleSubmit = () => {
         const updatedNote = { title, content }
         if(selectedNote.id){
-            fetch(`/api/notes/${selectedNote.id}`, {
+            fetch(endpointStructure+`/notes/${selectedNote.id}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.access_token}` 
                 },
                 body: JSON.stringify(updatedNote)
             })
@@ -35,10 +40,11 @@ function NoteModal(props){
             })
             .catch(error => console.error('Error updating note:', error))
         } else {
-            fetch('/api/notes', {
+            fetch(endpointStructure+'/notes', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user.access_token}` 
                 },
                 body: JSON.stringify(updatedNote)
             })
@@ -52,9 +58,11 @@ function NoteModal(props){
     }
 
     const handleDelete = () => {
-        console.log(selectedNote);
-        fetch(`/api/notes/${selectedNote.id}`, {
-            method: 'DELETE'
+        fetch(endpointStructure+`/notes/${selectedNote.id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${user.access_token}` 
+            },
         })
         .then(() => {
             setNotes(prevNotes => prevNotes.filter(note => note.id !== selectedNote.id))

@@ -11,17 +11,42 @@ app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
 
 const endpointStructure = process.env.ENDPOINT_STRUCTURE;
-console.log(endpointStructure);
 
 // Configure OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get(endpointStructure+'/chat', async (req, res) => {
+const authenticateUser = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).send('No token provided');
+  }
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error) {
+      console.error('Auth error:', error);
+      return res.status(401).send('Invalid token');
+    }
+    
+    if (!user) {
+      return res.status(401).send('No user found');
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    return res.status(401).send('Authentication failed');
+  }
+};
+
+app.get(endpointStructure + '/chat', authenticateUser, async (req, res) => {
   const { data, error } = await supabase
     .from('chat_history')
     .select('*')
+    .eq('user_id', req.user.id)
     .order('id', { ascending: true });
 
   if (error) {
@@ -33,11 +58,12 @@ app.get(endpointStructure+'/chat', async (req, res) => {
   res.json(data);
 });
 
-app.delete(endpointStructure+'/chat', async (req, res) => {
+
+app.delete(endpointStructure + '/chat', authenticateUser, async (req, res) => {
   const { error } = await supabase
     .from('chat_history')
     .delete()
-    .neq('id', 0); // Delete all rows
+    .eq('user_id', req.user.id);
 
   if (error) {
     console.error('Error deleting chat:', error);
@@ -48,13 +74,14 @@ app.delete(endpointStructure+'/chat', async (req, res) => {
   res.json({ message: 'Chat history cleared' });
 });
 
-app.post(endpointStructure+'/chat-stream', async (req, res) => {
+app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) => {
   const { message } = req.body;
   let chatHistory = [];
 
   const { data: rows, error: fetchError } = await supabase
     .from('chat_history')
     .select('*')
+    .eq('user_id', req.user.id)
     .order('id', { ascending: true });
 
   if (fetchError) {
@@ -94,14 +121,14 @@ app.post(endpointStructure+'/chat-stream', async (req, res) => {
 
     const { data, error } = await supabase
       .from('chat_history')
-      .insert([{ message, response: fullText }]).select();
+      .insert([{ message, response: fullText, user_id: req.user.id }])
+      .select();
 
     if (error) {
       console.error('Error saving chat:', error);
       res.status(500).send('Server error');
       return;
     }
-
 
     var finalChunk = `\n[[DONE]]`;
     finalChunk += `{ "id": ${data[0].id}, "message": "${message}", "response": "${fullText}" }`;
@@ -114,13 +141,14 @@ app.post(endpointStructure+'/chat-stream', async (req, res) => {
   }
 });
 
-app.post(endpointStructure+'/chat', async (req, res) => {
+app.post(endpointStructure + '/chat', authenticateUser, async (req, res) => {
   const { message } = req.body;
   let chatHistory = [];
 
   const { data: rows, error: fetchError } = await supabase
     .from('chat_history')
     .select('*')
+    .eq('user_id', req.user.id)
     .order('id', { ascending: true });
 
   if (fetchError) {
@@ -148,7 +176,8 @@ app.post(endpointStructure+'/chat', async (req, res) => {
 
     const { data, error } = await supabase
       .from('chat_history')
-      .insert([{ message, response: formattedResponse }]).select();
+      .insert([{ message, response: formattedResponse, user_id: req.user.id }])
+      .select();
 
     if (error) {
       console.error('Error saving chat:', error);
@@ -168,12 +197,11 @@ app.post(endpointStructure+'/chat', async (req, res) => {
   }
 });
 
-app.get(endpointStructure+'/tasks', async (req, res) => {
+app.get(endpointStructure + '/tasks', authenticateUser, async (req, res) => {
   const { data, error } = await supabase
     .from('tasks')
-    .select('*');
-
-    console.log(data);
+    .select('*')
+    .eq('user_id', req.user.id);
 
   if (error) {
     console.error('Error fetching tasks:', error);
@@ -184,12 +212,13 @@ app.get(endpointStructure+'/tasks', async (req, res) => {
   res.json(data);
 });
 
-app.post(endpointStructure+'/tasks', async (req, res) => {
+app.post(endpointStructure + '/tasks', authenticateUser, async (req, res) => {
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
   const { data, error } = await supabase
     .from('tasks')
-    .insert([{ title, description, date, priority, date_completed, recurrency }]).select();
+    .insert([{ title, description, date, priority, date_completed, recurrency, user_id: req.user.id }])
+    .select();
 
   if (error) {
     console.error('Error adding task:', error);
@@ -200,7 +229,8 @@ app.post(endpointStructure+'/tasks', async (req, res) => {
   res.status(201).json(data[0]);
 });
 
-app.put(endpointStructure+'/tasks/:id', async (req, res) => {
+
+app.put(endpointStructure + '/tasks/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
@@ -208,6 +238,7 @@ app.put(endpointStructure+'/tasks/:id', async (req, res) => {
     .from('tasks')
     .update({ title, description, date, priority, date_completed, recurrency })
     .eq('id', id)
+    .eq('user_id', req.user.id)
     .select();
 
   if (error) {
@@ -219,7 +250,7 @@ app.put(endpointStructure+'/tasks/:id', async (req, res) => {
   res.json(data[0]);
 });
 
-app.put(endpointStructure+'/tasks/:id/complete', async (req, res) => {
+app.put(endpointStructure + '/tasks/:id/complete', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { date_completed } = req.body;
 
@@ -227,6 +258,7 @@ app.put(endpointStructure+'/tasks/:id/complete', async (req, res) => {
     .from('tasks')
     .update({ date_completed })
     .eq('id', id)
+    .eq('user_id', req.user.id)
     .select();
 
   if (error) {
@@ -238,7 +270,7 @@ app.put(endpointStructure+'/tasks/:id/complete', async (req, res) => {
   res.json(data[0]);
 });
 
-app.put(endpointStructure+'/tasks/:id/reschedule', async (req, res) => {
+app.put(endpointStructure + '/tasks/:id/reschedule', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { date } = req.body;
 
@@ -246,6 +278,7 @@ app.put(endpointStructure+'/tasks/:id/reschedule', async (req, res) => {
     .from('tasks')
     .update({ date })
     .eq('id', id)
+    .eq('user_id', req.user.id)
     .select();
 
   if (error) {
@@ -257,13 +290,15 @@ app.put(endpointStructure+'/tasks/:id/reschedule', async (req, res) => {
   res.json(data[0]);
 });
 
-app.delete(endpointStructure+'/tasks/:id', async (req, res) => {
+
+app.delete(endpointStructure + '/tasks/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
 
   const { error } = await supabase
     .from('tasks')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', req.user.id);
 
   if (error) {
     console.error('Error deleting task:', error);
@@ -274,10 +309,11 @@ app.delete(endpointStructure+'/tasks/:id', async (req, res) => {
   res.status(204).send();
 });
 
-app.get(endpointStructure+'/notes', async (req, res) => {
+app.get(endpointStructure + '/notes', authenticateUser, async (req, res) => {
   const { data, error } = await supabase
     .from('notes')
     .select('*')
+    .eq('user_id', req.user.id)
     .order('id', { ascending: false });
 
   if (error) {
@@ -289,12 +325,13 @@ app.get(endpointStructure+'/notes', async (req, res) => {
   res.json(data);
 });
 
-app.post(endpointStructure+'/notes', async (req, res) => {
+app.post(endpointStructure + '/notes', authenticateUser, async (req, res) => {
   const { title, content } = req.body;
 
   const { data, error } = await supabase
     .from('notes')
-    .insert([{ title, content }]).select();
+    .insert([{ title, content, user_id: req.user.id }])
+    .select();
 
   if (error) {
     console.error('Error adding note:', error);
@@ -305,7 +342,7 @@ app.post(endpointStructure+'/notes', async (req, res) => {
   res.status(201).json(data[0]);
 });
 
-app.put(endpointStructure+'/notes/:id', async (req, res) => {
+app.put(endpointStructure + '/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
 
@@ -313,6 +350,7 @@ app.put(endpointStructure+'/notes/:id', async (req, res) => {
     .from('notes')
     .update({ title, content })
     .eq('id', id)
+    .eq('user_id', req.user.id)
     .select();
 
   if (error) {
@@ -324,13 +362,14 @@ app.put(endpointStructure+'/notes/:id', async (req, res) => {
   res.json(data[0]);
 });
 
-app.delete(endpointStructure+'/notes/:id', async (req, res) => {
+app.delete(endpointStructure + '/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
 
   const { error } = await supabase
     .from('notes')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', req.user.id);
 
   if (error) {
     console.error('Error deleting note:', error);
@@ -342,7 +381,7 @@ app.delete(endpointStructure+'/notes/:id', async (req, res) => {
 });
 
 // routing path
-app.get(endpointStructure+'/', (req, res) => {
+app.get(endpointStructure + '/', (req, res) => {
   res.send('Wrong endpoint!');
 });
 

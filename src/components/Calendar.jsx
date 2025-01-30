@@ -4,6 +4,8 @@ import interactionPlugin from '@fullcalendar/interaction'
 import rrulePlugin from '@fullcalendar/rrule'
 import { useContext } from 'react'
 import { TaskContext } from '../context/TaskContext'
+
+const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function Calendar() {
   const { tasks, openTaskModal, openEmptyTaskModal, setTasks } = useContext(TaskContext)
   
@@ -55,7 +57,7 @@ events.forEach(event => {
             date: info.event.startStr
           }
           // PUT or PATCH request to update the task in your API
-          fetch(`/api/tasks/${updatedTask.id}`, {
+          fetch(endpointStructure+`/tasks/${updatedTask.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'

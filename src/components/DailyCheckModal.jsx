@@ -2,8 +2,11 @@ import { useContext, useEffect, useState } from 'react'
 import { TaskContext } from '../context/TaskContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faQuestion, faCalendar } from '@fortawesome/free-solid-svg-icons'
+import { AuthContext } from '../context/AuthContext'
 
+const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 export default function DailyCheckModal() {
+  const { user } = useContext(AuthContext)
   const { tasks, setTasks } = useContext(TaskContext)
   const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
@@ -16,12 +19,16 @@ export default function DailyCheckModal() {
   const [unresolvedTasks, setUnresolvedTasks] = useState([])
 
   useEffect(() => {
-    // Check tasks from "yesterday"
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const dateString = yesterday.toISOString().split('T')[0]
+    // Check tasks from "todayt"
+    const today = new Date()
+    const dateString = today.toISOString().split('T')[0]
 
-    const tasksToHandle = tasks.filter(t => t.date < dateString && !t.date_completed) 
+    const tasksToHandle = tasks.filter(t => {
+      return t.date < dateString && 
+             (!t.date_completed || t.date_completed === "" || t.date_completed === null);
+    });
+    
+
 
     const recurringTasksToHandle = tasks.filter(t => t.recurrency !== 'none' & t.recurrency!==null && t.recurrency!="")
 
@@ -61,9 +68,6 @@ export default function DailyCheckModal() {
 
         lastOccurance = new Date(lastOccurance).toISOString().split('T')[0]
 
-        console.log('completed' , task.date_completed)
-        console.log(" todaysDate: ", todaysDate)
-        console.log("Last occurance: ", lastOccurance)
 
         // if there's been an occurance of the event since the last completion, add it to the list
         if (task.date_completed < lastOccurance) {
@@ -84,10 +88,11 @@ export default function DailyCheckModal() {
     const date_completed = new Date().toISOString().split('T')[0];
     
         const updatedTask = {  date_completed: date_completed }
-        fetch(`http:///api/tasks/${selectedTask.id}/complete`, {
+        fetch(endpointStructure+`/tasks/${selectedTask.id}/complete`, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.access_token}` 
           },
           body: JSON.stringify(updatedTask)
         })
@@ -103,10 +108,11 @@ export default function DailyCheckModal() {
   const handleReschedule = (selectedTask) => {
     var todays_date = new Date().toISOString().split('T')[0];
     const updatedTask = { date: todays_date }
-    fetch(`/api/tasks/${selectedTask.id}/reschedule`, {
+    fetch(endpointStructure+`/tasks/${selectedTask.id}/reschedule`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.access_token}` 
       },
       body: JSON.stringify(updatedTask)
     })

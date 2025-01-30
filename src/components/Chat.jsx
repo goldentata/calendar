@@ -3,6 +3,10 @@ import { ChatContext } from '../context/ChatContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import  NewChatButton  from './NewChatButton'
+import { AuthContext } from '../context/AuthContext'
+
+
+const endpointStructure = await import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 
 
 function Chat() {
@@ -16,6 +20,9 @@ function Chat() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [tmpMessage, setTmpMessage] = useState('')
 
+    
+
+    
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
@@ -24,13 +31,24 @@ function Chat() {
         scrollToBottom()
     }, [messages]);
 
-    useEffect(() => {
-        // Load chat history
-        fetch('/api/chat')
-            .then(response => response.json())
-            .then(data => setMessages(data))
-            .catch(error => console.error('Error fetching chat:', error))
-    }, [])
+
+
+      const { user } = useContext(AuthContext)
+    
+    
+    
+      useEffect(() => {
+        if (user) {
+          fetch(endpointStructure + '/chat', {
+            headers: {
+              'Authorization': `Bearer ${user.access_token}` // Add this
+            }
+          })
+          .then(response => response.json())
+          .then(data => setMessages(data))
+          .catch(error => console.log(error))
+        }
+      }, [user])
 
   // Submit handler
 
@@ -43,9 +61,9 @@ function Chat() {
 
     try {
       // POST to our streaming endpoint
-      const response = await fetch('/api/chat-stream', {
+      const response = await fetch(endpointStructure+'/chat-stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',  'Authorization': `Bearer ${user.access_token}`  },
         body: JSON.stringify({ message: newMessage }),
       });
 
@@ -80,7 +98,6 @@ function Chat() {
 
           let finalObj;
           try {
-            console.log(jsonPart);
             finalObj = JSON.parse(jsonPart);
           } catch (err) {
             console.error('Error parsing final JSON:', err);

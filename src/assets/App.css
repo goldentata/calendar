@@ -262,6 +262,7 @@ footer{
   flex-direction: column;
   gap: 0.5em;
   min-width: 120px;
+  z-index: 99;
 }
 
 .dropdown-menu a,

@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./config/db');
+const supabase = require('./config/db');
 const OpenAI = require('openai');
 const bodyParser = require('body-parser');
 const app = express();
@@ -10,166 +10,134 @@ app.use(bodyParser.json());
 app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
 
-function formatResponse(text) {
-  let formatted = text;
-
-  // Find and format numbered lists properly
-  formatted = formatted.replace(/(?:(^|\n)(?:\d+\.\s+[^\n]+\n?)+)/g, match => {
-      const listItems = match.trim().split('\n').map(item => {
-          return `<li>${item.replace(/^\d+\.\s+/, '')}</li>`;
-      }).join('');
-      return `<ol>${listItems}</ol>`;
-  });
-
-  // Convert "Steps:" or "Step-by-step:" to ordered list
-  formatted = formatted.replace(/(?:Steps|Step-by-step):\n((?:(?:\d+\.|[-*])\s.*\n?)*)/g, 
-      (match, list) => {
-          const listItems = list.trim().split('\n').map(item => {
-              return `<li>${item.replace(/(?:\d+\.|-|\*)\s+/, '')}</li>`;
-          }).join('');
-          return `<ol>${listItems}</ol>`;
-      }
-  );
-
-  // Convert bold text
-  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-  // Convert paragraphs (excluding lists)
-  formatted = formatted.split('\n\n')
-      .map(p => p.includes('<ol>') ? p : `<p>${p}</p>`)
-      .join('');
-
-  return formatted;
-}
+const endpointStructure = process.env.ENDPOINT_STRUCTURE;
+console.log(endpointStructure);
 
 // Configure OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get('/api/chat', (req, res) => {
-  db.all('SELECT * FROM chat_history ORDER BY id ASC', (err, rows) => {
-    if (err) {
-      console.error('Error fetching chat:', err);
-      res.status(500).send('Server error');
-      return;
-    }
-    console.log(rows);
-    res.json(rows);
-  });
+app.get(endpointStructure+'/chat', async (req, res) => {
+  const { data, error } = await supabase
+    .from('chat_history')
+    .select('*')
+    .order('id', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching chat:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json(data);
 });
 
-// clear chat
-app.delete('/api/chat', (req, res) => {
-  db.run('DELETE FROM chat_history', function (err) {
-    if (err) {
-      console.error('Error deleting chat:', err);
-      res.status(500).send('Server error');
-      return;
-    }
-    res.json({ message: 'Chat history cleared' });
-  });
+app.delete(endpointStructure+'/chat', async (req, res) => {
+  const { error } = await supabase
+    .from('chat_history')
+    .delete()
+    .neq('id', 0); // Delete all rows
+
+  if (error) {
+    console.error('Error deleting chat:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json({ message: 'Chat history cleared' });
 });
 
-app.post('/api/chat-stream', async (req, res) => {
-  
-  const openai = new OpenAI();
+app.post(endpointStructure+'/chat-stream', async (req, res) => {
   const { message } = req.body;
   let chatHistory = [];
-  db.all('SELECT * FROM chat_history ORDER BY id ASC', async (err, rows) => {
-    if (err) {
-      console.error('Error fetching chat history:', err);
-      res.status(500).send('Server error');
-      return;
-    }
-    chatHistory = rows.map(row => ({ role: 'user', content: row.message }));
-  
+
+  const { data: rows, error: fetchError } = await supabase
+    .from('chat_history')
+    .select('*')
+    .order('id', { ascending: true });
+
+  if (fetchError) {
+    console.error('Error fetching chat history:', fetchError);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  chatHistory = rows.map(row => ({ role: 'user', content: row.message }));
   chatHistory.push({ role: 'user', content: message });
+
   try {
     var todays_date = new Date().toISOString().split('T')[0];
     var day = new Date().getDay();
-    chatHistory.push({ role: 'system', content: 'The above is a conversation with an AI assistant. Try to keep your replies short, but helpful. If you do not have enough data to give an accurate answer please say so. This is a conversation so user will follow with answers. It is ' + todays_date + ' and it is ' + day + ' day of the week.' });
+    chatHistory.push({
+      role: 'system',
+      content: 'The above is a conversation with an AI assistant. Try to keep your replies short, but helpful. If you do not have enough data to give an accurate answer please say so. This is a conversation so user will follow with answers. It is ' + todays_date + ' and it is ' + day + ' day of the week.'
+    });
 
-    
-
-    // Required for chunked encoding in many Node/Express setups
-    // so the client receives partial chunks rather than buffering everything.
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
-    // Make a streaming request to OpenAI
     const stream = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: chatHistory,
-      store: true, 
+      store: true,
       stream: true,
     });
 
-    // We'll accumulate everything to store in DB at the end:
     let fullText = '';
 
-    // Stream tokens back to the client as soon as they arrive
     for await (const chunk of stream) {
       const token = chunk.choices[0]?.delta?.content || '';
       fullText += token;
-      // Write each token to the response immediately
       res.write(token);
     }
 
+    const { data, error } = await supabase
+      .from('chat_history')
+      .insert([{ message, response: fullText }]).select();
 
-    // insert to db
-    db.run(
-      'INSERT INTO chat_history (message, response) VALUES (?, ?)',
-      [message, fullText],
-      function (err) {
-        if (err) {
-          console.error('Error saving chat:', err);
-          res.status(500).send('Server error');
-          return;
-        }
-        var finalChunk = `\n[[DONE]]`;
+    if (error) {
+      console.error('Error saving chat:', error);
+      res.status(500).send('Server error');
+      return;
+    }
 
-        //{ id, message, response }
-        finalChunk += `{ "id": ${this.lastID}, "message": "${message}", "response": "${fullText}" }`;
-        res.write(finalChunk);
-        res.end();
-      }
-    );
 
-    
-
+    var finalChunk = `\n[[DONE]]`;
+    finalChunk += `{ "id": ${data[0].id}, "message": "${message}", "response": "${fullText}" }`;
+    res.write(finalChunk);
+    res.end();
 
   } catch (error) {
     console.error('Error in /chat-stream:', error);
     res.status(500).send(error.message);
   }
 });
-});
 
-// Endpoint to send message and get AI response
-app.post('/api/chat', async (req, res) => {
+app.post(endpointStructure+'/chat', async (req, res) => {
   const { message } = req.body;
-
-  
-
-  // Fetch all previous messages
   let chatHistory = [];
-  db.all('SELECT * FROM chat_history ORDER BY id ASC', async (err, rows) => {
-    if (err) {
-      console.error('Error fetching chat history:', err);
-      res.status(500).send('Server error');
-      return;
-    }
-    chatHistory = rows.map(row => ({ role: 'user', content: row.message }));
-  
+
+  const { data: rows, error: fetchError } = await supabase
+    .from('chat_history')
+    .select('*')
+    .order('id', { ascending: true });
+
+  if (fetchError) {
+    console.error('Error fetching chat history:', fetchError);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  chatHistory = rows.map(row => ({ role: 'user', content: row.message }));
   chatHistory.push({ role: 'user', content: message });
 
   try {
+    chatHistory.push({
+      role: 'system',
+      content: 'The above is a conversation with an AI assistant. Try to keep your replies short, but helpful. If you do not have enough data to give an accurate answer please say so. This is a conversation so user will follow with answers.'
+    });
 
-    // add system prompt to chat history
-    chatHistory.push({ role: 'system', content: 'The above is a conversation with an AI assistant. Try to keep your replies short, but helpful. If you do not have enough data to give an accurate answer please say so. This is a conversation so user will follow with answers.' });
-
-    // Get response from OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: chatHistory,
@@ -178,213 +146,207 @@ app.post('/api/chat', async (req, res) => {
     const aiResponse = completion.choices[0].message.content;
     const formattedResponse = formatResponse(aiResponse);
 
+    const { data, error } = await supabase
+      .from('chat_history')
+      .insert([{ message, response: formattedResponse }]).select();
 
-   
+    if (error) {
+      console.error('Error saving chat:', error);
+      res.status(500).send('Server error');
+      return;
+    }
 
-    // Save to database
-    db.run(
-      'INSERT INTO chat_history (message, response) VALUES (?, ?)',
-      [message, formattedResponse],
-      function (err) {
-        if (err) {
-          console.error('Error saving chat:', err);
-          res.status(500).send('Server error');
-          return;
-        }
-        res.json({ 
-          id: this.lastID, 
-          message, 
-          response: formattedResponse 
-        });
-      }
-    );
+    res.json({
+      id: data[0].id,
+      message,
+      response: formattedResponse
+    });
+
   } catch (error) {
     console.error('Error with OpenAI:', error);
     res.status(500).send('AI Service error');
   }
 });
 
+app.get(endpointStructure+'/tasks', async (req, res) => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*');
+
+    console.log(data);
+
+  if (error) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json(data);
 });
 
-// Endpoint for tasks
-app.get('/api/tasks', (req, res) => {
-  db.all('SELECT * FROM tasks', (err, rows) => {
-    if (err) {
-      console.error('Error fetching tasks:', err);
-      res.status(500).send('Server error');
-      return;
-    }
-    res.json(rows);
-  });
-});
-
-// Endpoint to add a new task
-app.post('/api/tasks', (req, res) => {
+app.post(endpointStructure+'/tasks', async (req, res) => {
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
-  db.run(
-    'INSERT INTO tasks (title, description, date, priority, date_completed, recurrency) VALUES (?, ?, ?, ?, ?, ?)',
-    [title, description, date, priority, date_completed, recurrency],
-    function (err) {
-      if (err) {
-        console.error('Error adding task:', err);
-        res.status(500).send('Server error');
-        return;
-      }
-      res.status(201).json({ id: this.lastID, title, description, date, priority, date_completed, recurrency });
-    }
-  );
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([{ title, description, date, priority, date_completed, recurrency }]).select();
+
+  if (error) {
+    console.error('Error adding task:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.status(201).json(data[0]);
 });
 
-// Endpoint to update an existing task
-app.put('/api/tasks/:id', (req, res) => {
+app.put(endpointStructure+'/tasks/:id', async (req, res) => {
   const { id } = req.params;
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
-  db.run(
-    'UPDATE tasks SET title = ?, description = ?, date = ?, priority = ?, date_completed = ?, recurrency = ? WHERE id = ?',
-    [title, description, date, priority, date_completed, recurrency, id],
-    function (err) {
-      if (err) {
-        console.error('Error updating task:', err);
-        res.status(500).send('Server error');
-        return;
-      }
-      res.json({ id, title, description, date, priority, date_completed, recurrency });
-    }
-  );
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ title, description, date, priority, date_completed, recurrency })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error updating task:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json(data[0]);
 });
 
-// Endpoint to complete an existing task
-app.put('/api/tasks/:id/complete', (req, res) => {
+app.put(endpointStructure+'/tasks/:id/complete', async (req, res) => {
   const { id } = req.params;
   const { date_completed } = req.body;
-  db.run(
-    'UPDATE tasks SET date_completed = ? WHERE id = ?',
-    [date_completed, id],
-    function (err) {
-      if (err) {
-        console.error('Error completing task:', err);
-        res.status(500).send('Server error');
-        return;
-      }
-      db.get('SELECT * FROM tasks WHERE id = ?', [id], (err, row) => {
-        if (err) {
-          console.error('Error fetching updated task:', err);
-          res.status(500).send('Server error');
-          return;
-        }
-        res.json(row);
-      });
-    }
-  );
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ date_completed })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error completing task:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json(data[0]);
 });
 
-// Endpoint to complete an existing task
-app.put('/api/tasks/:id/reschedule', (req, res) => {
+app.put(endpointStructure+'/tasks/:id/reschedule', async (req, res) => {
   const { id } = req.params;
   const { date } = req.body;
-  db.run(
-    'UPDATE tasks SET date = ? WHERE id = ?',
-    [date, id],
-    function (err) {
-      if (err) {
-        console.error('Error completing task:', err);
-        res.status(500).send('Server error');
-        return;
-      }
-      db.get('SELECT * FROM tasks WHERE id = ?', [id], (err, row) => {
-        if (err) {
-          console.error('Error fetching updated task:', err);
-          res.status(500).send('Server error');
-          return;
-        }
-        res.json(row);
-      });
-    }
-  );
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ date })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error rescheduling task:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json(data[0]);
 });
 
-// Endpoint to delete a task
-app.delete('/api/tasks/:id', (req, res) => {
-    const { id } = req.params;
-    db.run('DELETE FROM tasks WHERE id = ?', [id], function (err) {
-      if (err) {
-        console.error('Error deleting task:', err);
-        res.status(500).send('Server error');
-        return;
-      }
-      res.status(204).send();
-    });
-  });
+app.delete(endpointStructure+'/tasks/:id', async (req, res) => {
+  const { id } = req.params;
 
-// Endpoint for notes
-app.get('/api/notes', (req, res) => {
-  db.all('SELECT * FROM notes ORDER BY id DESC', (err, rows) => {
-    if (err) {
-      console.error('Error fetching notes:', err);
-      res.status(500).send('Server error');
-      return;
-    }
-    res.json(rows);
-  });
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting task:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.status(204).send();
 });
 
-app.post('/api/notes', (req, res) => {
-    const { title, content } = req.body;
-    db.run(
-        'INSERT INTO notes (title, content) VALUES (?, ?)',
-        [title, content],
-        function (err) {
-        if (err) {
-            console.error('Error adding note:', err);
-            res.status(500).send('Server error');
-            return;
-        }
-        res.status(201).json({ id: this.lastID, title, content });
-        }
-    );
-    }
-);
+app.get(endpointStructure+'/notes', async (req, res) => {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .order('id', { ascending: false });
 
-app.put('/api/notes/:id', (req, res) => {
-    const { id } = req.params;
-    const { title, content } = req.body;
-    db.run(
-        'UPDATE notes SET title = ?, content = ? WHERE id = ?',
-        [title, content, id],
-        function (err) {
-        if (err) {
-            console.error('Error updating note:', err);
-            res.status(500).send('Server error');
-            return;
-        }
-        res.json({ id, title, content });
-        }
-    );
-    }
-);
+  if (error) {
+    console.error('Error fetching notes:', error);
+    res.status(500).send('Server error');
+    return;
+  }
 
-app.delete('/api/notes/:id', (req, res) => {
-    const { id } = req.params;
-    db.run('DELETE FROM notes WHERE id = ?', [id], function (err) {
-        if (err) {
-        console.error('Error deleting note:', err);
-        res.status(500).send('Server error');
-        return;
-        }
-        res.status(204).send();
-    });
-    }
-);
+  res.json(data);
+});
+
+app.post(endpointStructure+'/notes', async (req, res) => {
+  const { title, content } = req.body;
+
+  const { data, error } = await supabase
+    .from('notes')
+    .insert([{ title, content }]).select();
+
+  if (error) {
+    console.error('Error adding note:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.status(201).json(data[0]);
+});
+
+app.put(endpointStructure+'/notes/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, content } = req.body;
+
+  const { data, error } = await supabase
+    .from('notes')
+    .update({ title, content })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error updating note:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.json(data[0]);
+});
+
+app.delete(endpointStructure+'/notes/:id', async (req, res) => {
+  const { id } = req.params;
+
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting note:', error);
+    res.status(500).send('Server error');
+    return;
+  }
+
+  res.status(204).send();
+});
 
 // routing path
-app.get('/api/', (req, res) => {
-    res.send('Wrong endpoint!');
+app.get(endpointStructure+'/', (req, res) => {
+  res.send('Wrong endpoint!');
 });
 
 // Start the server
 app.listen(3000, () => {
   console.log('Server started on port 3000');
 });
-

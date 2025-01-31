@@ -4,6 +4,9 @@ import { ChatContext } from '../context/ChatContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faQuestion, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { AuthContext } from '../context/AuthContext'
+import Editor from 'react-simple-wysiwyg';
+
+
 
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function TaskModal() {
@@ -158,10 +161,9 @@ function TaskModal() {
           </div>
           <div>
             <label>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+          
+
+            <Editor value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div>
             <label>Date</label>

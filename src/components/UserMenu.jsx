@@ -20,7 +20,12 @@ function UserMenu() {
         {isOpen && (
           <div className="dropdown-menu">
             {user ? (
-              <button onClick={signOut}>Logout</button>
+            
+                <button onClick={() => {
+                    signOut()
+                    setShowLoginModal(true)
+                }}>Logout</button>
+         
             ) : (
               <>
                 <button onClick={() => setShowLoginModal(true)}>Login</button>

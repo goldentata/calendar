@@ -22,7 +22,11 @@ function Calendar() {
 const getEventClasses = (event) => {
   const classes = [];
   const start_date = new Date(event.start);
-  const completed_date = new Date(event.extendedProps.date_completed);
+  if(event.extendedProps.date_completed === null || event.extendedProps.date_completed === "") {
+    var completed_date = 'Invalid Date';
+  } else {
+    var completed_date = new Date(event.extendedProps.date_completed);
+  }
   const is_recurring = event.extendedProps.recurrency !== 'none' && 
                       event.extendedProps.recurrency !== null && 
                       event.extendedProps.recurrency !== "";
@@ -79,7 +83,11 @@ const transformEvents = (tasks) => {
 
 const getEventTitle = (task) => {
   const start_date = new Date(task.date);
-  const completed_date = new Date(task.date_completed);
+  if(task.date_completed === null || task.date_completed === "") {
+    var completed_date = 'Invalid Date';
+  } else {
+    var completed_date = new Date(task.date_completed);
+  }
   const is_recurring = task.recurrency !== 'none' && 
                       task.recurrency !== null && 
                       task.recurrency !== "";

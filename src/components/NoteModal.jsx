@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react'
 import { NoteContext  } from '../context/NoteContext';
 import { AuthContext } from '../context/AuthContext';
+import Editor from 'react-simple-wysiwyg';
 
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function NoteModal(props){
@@ -84,9 +85,8 @@ function NoteModal(props){
                     onChange={ (e) => setTitle(e.target.value) 
                  } required />
                 <label>Content</label>
-                <textarea 
-                    value={content} 
-                    onChange={ (e) => setContent(e.target.value) } required />
+                    
+            <Editor value={content} onChange={(e) => setContent(e.target.value)} required/>
                     <div className="buttons">
                 <button type="submit" onClick={() => handleSubmit()}>Save</button>  
                 <button  className="delete"  onClick={() => handleDelete()}>Delete</button>  

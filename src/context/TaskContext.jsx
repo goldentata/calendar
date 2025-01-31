@@ -9,6 +9,7 @@ export function TaskProvider({ children }) {
     const [selectedTask, setSelectedTask] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useContext(AuthContext)
+  const { signOut, setShowLoginModal } = useContext(AuthContext);
 
 
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +25,14 @@ export function TaskProvider({ children }) {
                         'Authorization': `Bearer ${user.access_token}`
                     }
                 });
+
+                if (response.status === 401) {
+                    // Trigger user logout and show login modal
+                    await signOut();
+                    setShowLoginModal(true);
+                    return;
+                }
+
                 const data = await response.json();
                 setTasks(data);
                 localStorage.setItem('cachedTasks', JSON.stringify(data));
@@ -38,10 +47,31 @@ export function TaskProvider({ children }) {
     }, [user]);
 
 
-    const refreshTasks = () => {
-        setIsLoading(true);
+    const refreshTasks = async () => {
+        try {
+            const response = await fetch(endpointStructure + '/tasks', {
+                headers: {
+                    'Authorization': `Bearer ${user.access_token}`
+                }
+            });
+    
+            if (response.status === 401) {
+                await signOut();
+                setShowLoginModal(true);
+                return;
+            }
+    
+            const data = await response.json();
+            setTasks(data);
+            localStorage.setItem('cachedTasks', JSON.stringify(data));
+        } catch (error) {
+            console.error('Error refreshing tasks:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
+    
     const openTaskModal = (task) => {
         setSelectedTask(task);
         setIsModalOpen(true);

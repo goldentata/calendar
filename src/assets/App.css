@@ -94,6 +94,7 @@ form div:first-child label {
   background: #444;
   padding: .5em;
   border-radius: 8px;
+  margin-bottom: 7px;
 }
 .inline.task_reminder .buttons{
   margin:0;
@@ -202,11 +203,35 @@ button.self_right {
   padding: 2em;
 }
 
+select.rsw-dd {
+  padding: 0;
+  width: auto;
+}
+button.rsw-btn {
+  color: #fff!important;
+}
 
+button.rsw-btn:hover {
+  background: #333!important;
+}
+.rsw-btn[data-active=true] {
+  background: #333!important
+}
+.rsw-toolbar {
+  background-color: #ffffff14!important;
+  color: #fff!important;
+  border-color: #555!important;
+}
+.rsw-separator{
+  border-color:#666!important;
+}
+.rsw-editor {
+  border-color: #555!important;
+}
 .modal-content {
   background: #333;
   border-radius: 8px;
-  max-width: 500px;
+  max-width: 600px;
   width: 90%;
   overflow: hidden;
   box-shadow: 0 0 10px 10px #00000036;

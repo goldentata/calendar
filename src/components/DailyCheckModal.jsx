@@ -94,7 +94,9 @@ export default function DailyCheckModal() {
 
     if (JSON.stringify(uniqueTasks) !== JSON.stringify(unresolvedTasks)){
       setUnresolvedTasks(uniqueTasks)
-      setShowModal(true)
+      if(uniqueTasks.length > 0){
+        setShowModal(true)
+      }
     }
   }, [tasks])
 

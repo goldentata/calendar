@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import  NewChatButton  from './NewChatButton'
 import { AuthContext } from '../context/AuthContext'
+import { TaskContext } from '../context/TaskContext'
 
 
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
@@ -20,6 +21,7 @@ function Chat() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [tmpMessage, setTmpMessage] = useState('')
 
+    const { refreshTasks } = useContext(TaskContext)
     
 
     
@@ -105,6 +107,7 @@ function Chat() {
 
           // finalObj should be your { id, message, response }
           if (finalObj) {
+            console.log('Final object:', finalObj);
             setMessages((prev) => [...prev, finalObj]);
             setIsStreaming(false);
           }
@@ -119,6 +122,17 @@ function Chat() {
           setLiveResponse(accumulatedText);
         }
       }
+
+      // console log the final response
+      console.log('Final response:', accumulatedText);
+
+      // if accumlatedText is Task created successfully! then run TaskContext refreshTasks
+      if(accumulatedText.includes('Task created successfully!')) {
+        console.log('task created successfully - updating tasks');
+        await refreshTasks();
+      }
+      
+
 
       // Clean up
       reader.releaseLock();

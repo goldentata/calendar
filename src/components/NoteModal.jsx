@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react'
 import { NoteContext  } from '../context/NoteContext';
 import { AuthContext } from '../context/AuthContext';
+import { LoaderContext } from '../context/LoaderContext';
 import Editor from 'react-simple-wysiwyg';
 
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
@@ -11,6 +12,7 @@ function NoteModal(props){
     const [content, setContent] = useState('')
     const [id, setId] = useState('')
     const { user } = useContext(AuthContext)
+    const { setIsLoaderOn } = useContext(LoaderContext)
 
 
     useEffect(() => {
@@ -24,6 +26,7 @@ function NoteModal(props){
     if (!isModalOpen) return null
 
     const handleSubmit = () => {
+        setIsLoaderOn(true);
         const updatedNote = { title, content }
         if(selectedNote.id){
             fetch(endpointStructure+`/notes/${selectedNote.id}`, {
@@ -38,6 +41,7 @@ function NoteModal(props){
             .then(data => {
                 setNotes(prevNotes => prevNotes.map(note => (note.id == data.id ? data : note)))
                 setIsModalOpen(false)
+                setIsLoaderOn(false);
             })
             .catch(error => console.error('Error updating note:', error))
         } else {
@@ -53,12 +57,14 @@ function NoteModal(props){
             .then(data => {
                 setNotes(prevNotes => [data, ...prevNotes])
                 setIsModalOpen(false)
+                setIsLoaderOn(false);
             })
             .catch(error => console.error('Error saving note:', error))
         }
     }
 
     const handleDelete = () => {
+        setIsLoaderOn(true);
         fetch(endpointStructure+`/notes/${selectedNote.id}`, {
             method: 'DELETE',
             headers: {
@@ -68,6 +74,7 @@ function NoteModal(props){
         .then(() => {
             setNotes(prevNotes => prevNotes.filter(note => note.id !== selectedNote.id))
             setIsModalOpen(false)
+            setIsLoaderOn(false);
         })
         .catch(error => console.error('Error deleting note:', error))
     }

@@ -4,6 +4,7 @@ import { ChatContext } from '../context/ChatContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faQuestion, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { AuthContext } from '../context/AuthContext'
+import { LoaderContext  } from '../context/LoaderContext'
 import Editor from 'react-simple-wysiwyg';
 
 
@@ -20,6 +21,7 @@ function TaskModal() {
   const [recurrency, setRecurrency] = useState('')
   const { setNewMessage } = useContext(ChatContext)
   const { user } = useContext(AuthContext)
+  const { setIsLoaderOn } = useContext(LoaderContext)
 
 
   function helpWithChat(selectedTask) {
@@ -33,6 +35,7 @@ function TaskModal() {
 
   useEffect(() => {
     if (selectedTask) {
+      console.log(selectedTask)
       setId(selectedTask.id || '')
       setTitle(selectedTask.title || '')
       setDescription(selectedTask.description || '')
@@ -44,6 +47,7 @@ function TaskModal() {
   }, [selectedTask])
 
   const handleSubmit = (e) => {
+    setIsLoaderOn(true);
     e.preventDefault()
     const updatedTask = { title, description, date , priority, date_completed, recurrency }
 
@@ -61,6 +65,7 @@ function TaskModal() {
         .then(data => {
           setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
           setIsModalOpen(false)
+          setIsLoaderOn(false);
         })
         .catch(error => console.error('Error updating task:', error))
     } else {
@@ -77,12 +82,14 @@ function TaskModal() {
         .then(data => {
           setTasks(prevTasks => [...prevTasks, data])
           setIsModalOpen(false)
+          setIsLoaderOn(false);
         })
         .catch(error => console.error('Error saving task:', error))
     }
   }
 
   const handleCompleted = (date_completed) => {
+    setIsLoaderOn(true);
     const updatedTask = { title, description, date , priority, date_completed: date_completed, recurrency }
     fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
       method: 'PUT',
@@ -96,12 +103,14 @@ function TaskModal() {
       .then(data => {
         setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
         setIsModalOpen(false)
+        setIsLoaderOn(false);
       }
       )
       .catch(error => console.error('Error updating task:', error))
   }
 
   const handleIncomplete = (date_completed) => {
+    setIsLoaderOn(true);
     const updatedTask = { title, description, date , priority, date_completed: date_completed, recurrency, id: selectedTask.id }
     fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
       method: 'PUT',
@@ -115,12 +124,14 @@ function TaskModal() {
       .then(data => {
         setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
         setIsModalOpen(false)
+        setIsLoaderOn(false);
       }
       )
       .catch(error => console.error('Error updating task:', error))
   }
 
   const handleDelete = () => {
+    setIsLoaderOn(true);
     fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
       method: 'DELETE',
       headers: {
@@ -130,11 +141,15 @@ function TaskModal() {
       .then(() => {
         setTasks(prevTasks => prevTasks.filter(task => task.id != selectedTask.id))
         setIsModalOpen(false)
+        setIsLoaderOn(false);
       })
       .catch(error => console.error('Error deleting task:', error))
   }
 
-
+  const handlePriorityChange = (e) => {
+    console.log('New priority:', e.target.value);
+    setPriority(e.target.value);
+  };
 
   if (!isModalOpen) return null
 
@@ -178,7 +193,7 @@ function TaskModal() {
                             <label>Priority</label>
                             <select 
                                 value={priority}
-                                onChange={(e) => setPriority(e.target.value)}
+                                onChange={(e) => handlePriorityChange(e)}
                                 required
                             > 
                                 <option value="High">High</option>

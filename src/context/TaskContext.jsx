@@ -1,5 +1,7 @@
-import { createContext, useState, useEffect, useContext, useRef } from 'react';
+import { createContext, useState, useEffect, useContext,  } from 'react';
 import { AuthContext } from './AuthContext'
+import { LoaderContext } from './LoaderContext';
+import { faL } from '@fortawesome/free-solid-svg-icons';
 
 export const TaskContext = createContext();
 
@@ -10,15 +12,15 @@ export function TaskProvider({ children }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useContext(AuthContext)
   const { signOut, setShowLoginModal } = useContext(AuthContext);
+  const {setIsLoaderOn} = useContext(LoaderContext);
 
 
   const [isLoading, setIsLoading] = useState(true);
-    const initRef = useRef(false);
     useEffect(() => {
-        if (!user || initRef.current) return;
-        initRef.current = true;
+       
 
         const fetchTasks = async () => {
+            setIsLoaderOn(true);
             try {
                 const response = await fetch(endpointStructure + '/tasks', {
                     headers: {
@@ -35,20 +37,26 @@ export function TaskProvider({ children }) {
 
                 const data = await response.json();
                 setTasks(data);
+                setIsLoading(false);
+                setIsLoaderOn(false);
                 localStorage.setItem('cachedTasks', JSON.stringify(data));
             } catch (error) {
                 console.error('Error fetching tasks:', error);
             } finally {
                 setIsLoading(false);
+                setIsLoaderOn(false);
             }
         };
-
-        fetchTasks();
+        if (user) {
+            fetchTasks();
+          }
     }, [user]);
 
 
     const refreshTasks = async () => {
         try {
+            
+            setIsLoaderOn(true);
             const response = await fetch(endpointStructure + '/tasks', {
                 headers: {
                     'Authorization': `Bearer ${user.access_token}`
@@ -63,11 +71,15 @@ export function TaskProvider({ children }) {
     
             const data = await response.json();
             setTasks(data);
+            
+            setIsLoaderOn(false);
             localStorage.setItem('cachedTasks', JSON.stringify(data));
         } catch (error) {
             console.error('Error refreshing tasks:', error);
         } finally {
             setIsLoading(false);
+            
+            setIsLoaderOn(false);
         }
     };
 

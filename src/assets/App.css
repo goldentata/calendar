@@ -29,6 +29,9 @@ form div:first-child label {
 .modal-header{
   background:#666;
 }
+.btn-warning{
+  background-color: #f0a500;
+}
 .btn-primary{
   background-color: #3788d8;
 }
@@ -201,6 +204,67 @@ button.self_right {
 }
 .modal-header{
   padding: 2em;
+}
+ol ol {
+  padding: 0;
+}
+.task-proposal {
+  background: #444;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1em;
+  margin: 1em 0;
+}
+
+.task-proposal-details {
+  margin: 0.5em 0;
+}
+
+.task-proposal-buttons {
+  display: flex;
+  gap: 0.5em;
+  margin-top: 1em;
+}
+
+.task-proposal-buttons button:first-child {
+  background: #3788d8;
+}
+
+.task-proposal-buttons button:last-child {
+  background: #a13232;
+}
+.global-loader {
+  opacity:0;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(34, 34, 34, 0.7);
+  justify-content: center;
+  align-items: center;
+  display:flex;
+  z-index: 999999999999;
+  transition: all .5s;
+}
+.global-loader.active{
+  opacity:1;
+
+}
+
+.spinner {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #555;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 select.rsw-dd {

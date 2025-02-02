@@ -4,7 +4,12 @@ require('dotenv').config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey,  {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 async function createTables() {
   // Create tasks table

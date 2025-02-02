@@ -7,11 +7,14 @@ import { NoteProvider } from './context/NoteContext'
 import { TaskProvider } from './context/TaskContext'
 import { ChatProvider } from './context/ChatContext'
 import { AuthProvider } from './context/AuthContext'
+import { LoaderProvider } from './context/LoaderContext'
 import LoginModal from './components/LoginModal'
 import SignupModal from './components/SignupModal'
 
+
 function App() {
   return (
+    <LoaderProvider>
     <AuthProvider>
       <ChatProvider>
         <TaskProvider>
@@ -27,6 +30,7 @@ function App() {
         </TaskProvider>
       </ChatProvider>
     </AuthProvider>
+    </LoaderProvider>
   )
 }
 

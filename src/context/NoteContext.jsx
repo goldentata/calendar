@@ -13,7 +13,6 @@ export function NoteProvider({ children }) {
 
   useEffect(() => {
       async function fetchNotes() {
-          if (!user || !isLoading) return;
 
           try {
               const response = await fetch(endpointStructure + '/notes', {
@@ -30,7 +29,9 @@ export function NoteProvider({ children }) {
           }
       }
 
-      fetchNotes();
+      if (user) {
+          fetchNotes();
+      }
   }, [user, isLoading]);
 
   const openNoteModal = (note) => {

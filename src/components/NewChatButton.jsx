@@ -7,12 +7,12 @@ import { AuthContext } from '../context/AuthContext'
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 
 function NewChatButton(){
-    const { setNewMessage, setMessages } = useContext(ChatContext)
+    const { setNewMessage, setMessages, setTmpMessage } = useContext(ChatContext)
     const { user } = useContext(AuthContext)
 
     function clearChat() {
-        const message = ''
-        setNewMessage(message)
+        setNewMessage('')
+        setTmpMessage('')
 
         fetch(endpointStructure+'/chat', {
             method: 'DELETE',

@@ -1,16 +1,21 @@
 import { useContext, useEffect, useState } from 'react'
 import { TaskContext } from '../context/TaskContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheck, faQuestion, faCalendar } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faQuestion, faCalendar, faEdit } from '@fortawesome/free-solid-svg-icons'
 import { AuthContext } from '../context/AuthContext'
+import { LoaderContext } from '../context/LoaderContext'
+import { ChatContext } from '../context/ChatContext'
 
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 export default function DailyCheckModal() {
   const { user } = useContext(AuthContext)
-  const { tasks, setTasks } = useContext(TaskContext)
+  const { tasks, setTasks, openTaskModal } = useContext(TaskContext)
 
   const [showModal, setShowModal] = useState(false)
   const [unresolvedTasks, setUnresolvedTasks] = useState([])
+  const { setIsLoaderOn } = useContext(LoaderContext)
+
+  const { setNewMessage } = useContext(ChatContext)
 
   useEffect(() => {
     
@@ -101,6 +106,7 @@ export default function DailyCheckModal() {
   }, [tasks])
 
   const handleComplete = (selectedTask) => {
+    setIsLoaderOn(true);
     const date_completed = new Date().toISOString().split('T')[0];
     
         const updatedTask = {  date_completed: date_completed }
@@ -114,14 +120,23 @@ export default function DailyCheckModal() {
         })
           .then(response => response.json())
           .then(data => {
-           // setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
+            setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
+            setIsLoaderOn(false);
          //   setShowModal(false)
           }
           )
           .catch(error => console.error('Error updating task:', error))
   }
 
+  const handleEdit = (selectedTask) => {
+    setIsLoaderOn(true)
+    openTaskModal(selectedTask)
+    setShowModal(false)
+    setIsLoaderOn(false)
+  }
+
   const handleReschedule = (selectedTask) => {
+    setIsLoaderOn(true)
     var todays_date = new Date().toISOString().split('T')[0];
     const updatedTask = { date: todays_date }
     fetch(endpointStructure+`/tasks/${selectedTask.id}/reschedule`, {
@@ -134,8 +149,9 @@ export default function DailyCheckModal() {
     })
       .then(response => response.json())
       .then(data => {
-       // setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
+        setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
         setShowModal(false)
+        setIsLoaderOn(false)
       }
       )
       .catch(error => console.error('Error updating task:', error))
@@ -144,8 +160,7 @@ export default function DailyCheckModal() {
 
   
   function helpWithChat(selectedTask) {
-    console.log("Help with chat");
-    console.log(selectedTask);
+    setNewMessage(`I need help with ${selectedTask.title} ${selectedTask.description}`)
     setShowModal(false);
   }
 
@@ -166,7 +181,8 @@ export default function DailyCheckModal() {
           {task.title}
           <div className="buttons">
           <button className="square btn-success" onClick={() => handleComplete(task)}> <FontAwesomeIcon icon={faCheck} /> </button>
-          <button className="square btn-primary" onClick={() => handleReschedule(task)}> <FontAwesomeIcon icon={faCalendar} /> </button>
+          <button className="square btn-primary" onClick={() => handleEdit(task)}> <FontAwesomeIcon icon={faEdit} /> </button>
+          <button className="square btn-warning" onClick={() => handleReschedule(task)}> <FontAwesomeIcon icon={faCalendar} /> </button>
           <button className="square " onClick={() => helpWithChat(task)}> <FontAwesomeIcon icon={faQuestion} /> </button>
           </div>
           </div>

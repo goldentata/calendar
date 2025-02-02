@@ -3,7 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl, supabaseKey, { auth: {
+  persistSession: true,
+  autoRefreshToken: true,
+},
+})
 
 export const AuthContext = createContext()
 
@@ -33,6 +37,20 @@ export function AuthProvider({ children }) {
                 setShowLoginModal(true);
             }
         });
+    }, []);
+
+    useEffect(() => {
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          localStorage.setItem('session', JSON.stringify(session));
+          setUser(session);
+          setShowLoginModal(false);
+        } else {
+          setUser(null);
+          setShowLoginModal(true);
+        }
+      });
+      return () => authListener.subscription.unsubscribe();
     }, []);
 
   const signUp = async (email, password) => {

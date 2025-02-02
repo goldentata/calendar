@@ -183,9 +183,29 @@ const updateTask = async (taskId, updates, userId) => {
     .eq('user_id', userId)
     .select();
 
-  if (error) {
-    console.error('Error updating task:', error);
-    throw new Error('Error updating task');
+  if (error) throw new Error('Error updating task');
+
+  // Refresh Pinecone index
+  try {
+    const index = client.Index(process.env.PINECONE_INDEX);
+    const textForEmbedding = `${updates.title}\n ${updates.date} \n ${updates.description}`;
+    const embedding = await generateEmbedding(textForEmbedding);
+
+    if (embedding) {
+      await upsertToPinecone([{
+        id: taskId.toString(),
+        values: embedding,
+        metadata: {
+          user_id: userId,
+          title: updates.title,
+          description: updates.description,
+          date: updates.date,
+          type: 'task',
+        },
+      }], userId);
+    }
+  } catch (err) {
+    console.error('Error updating Pinecone:', err);
   }
 
   return data[0];
@@ -227,7 +247,7 @@ app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) 
           { role: "system", 
             content: `Check users message, if it is mentioning a point in time like "what is my schedule tomorrow"
              rewrite users message to explain the context but keep it as you were the author. In example before the good response would be "what is my schedule on Y-m-d". Otherwise respond with the same content, today is  ${new Date().toISOString().split('T')[0]}, which is ${new Date().getDay()} day of the week. 
-             Decide whether this question requires some further context that we need from the vector database.
+             Decide whether this question requires some further context that we need from the vector database. Example details we may need are task details, so if user talks about anything that could be a task or event we should search Pinecone.
              RESPOND WITH A JSON OBJECT CONTAINING MESSAGE, PINECONE (true/false)
              `},
           { role: "user", content: message }],
@@ -247,7 +267,6 @@ app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) 
     json_string = message_conversion.choices[0].message.content;
 
     console.log(json_string);
-
      date_conversion = JSON.parse(json_string).message;
      if(date_conversion == undefined)
       date_conversion = JSON.parse(json_string).MESSAGE;
@@ -293,7 +312,7 @@ app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) 
         .map((match) => {
           const md = match.metadata;
           // Example: "Task Title: ...; Description: ..."
-          return `Title: ${md.title}\nDescription: ${md.description}\nType: ${md.type}\nDate: ${md.date}\nRecurrency: ${md.recurrency}\nPriority: ${md.priority}`;
+          return `Task/Event ID: ${match.id}\n Title: ${md.title}\nDescription: ${md.description}\nType: ${md.type}\nDate: ${md.date}\nRecurrency: ${md.recurrency}\nPriority: ${md.priority}`;
         })
         .join('\n\n');
     }
@@ -314,7 +333,7 @@ app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) 
       When creating tasks, use the user ID: ${userId}. Please make sure user may also be asking about their existing tasks`
     });
 
-    console.log(pineconeContext);
+   
     // Now inject the vector-search results as additional context
     if (pineconeContext) {
       chatHistory.push({
@@ -344,15 +363,23 @@ app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) 
       },
       {
         name: 'updateTask',
-        description: 'Update an existing task',
+        description: 'Update an existing task. Make sure to always provide all fields, even if they are unchanged.',
         parameters: {
           type: 'object',
           properties: {
-            taskId: { type: 'string' },
-            updates: { type: 'object' },
-            userId: { type: 'string' }
+            taskId: { type: 'number' },
+            updates: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                date: { type: 'string', format: 'date' },
+                priority: { type: 'string' },
+                recurrency: { type: 'string' }
+              }
+            }
           },
-          required: ['taskId', 'updates', 'userId']
+          required: ['taskId', 'updates']
         }
       }
     ];
@@ -400,21 +427,36 @@ app.post(endpointStructure + '/chat-stream', authenticateUser, async (req, res) 
         const parsedArgs = JSON.parse(functionCall.arguments);
         if (functionCall.name === 'createTask') {
           const { title, description, date, priority } = parsedArgs;
-          fullText += '\nTask created successfully!';
+          fullText += `\n<task-proposal>{"title":"${title}","description":"${description}","date":"${date}","priority":"${priority}"}</task-proposal>`;
           res.write(fullText);
-          await createTask(title, description, date, priority, userId); // Use stored userId
+          //await createTask(title, description, date, priority, userId); 
         } else if (functionCall.name === 'updateTask') {
           const { taskId, updates } = parsedArgs;
-          fullText += '\nTask updated successfully!';
+          fullText += `\n<task-update>{"id":${taskId},"title":"${updates.title}","description":"${updates.description}","date":"${updates.date}","priority":"${updates.priority}"}</task-update>`;
           res.write(fullText);
-          await updateTask(taskId, updates, userId); // Use stored userId
+          //await updateTask(taskId, updates, userId); // Use stored userId
         }
       } catch (error) {
         console.error('Error processing function call:', error);
       }
     }
 
-    const formattedResponse = formatResponseToHtml(fullText);
+    const cleanTaskProposal = (text) => {
+      const createMatch = text.match(/<task-proposal>(.*?)<\/task-proposal>/);
+      const updateMatch = text.match(/<task-update>(.*?)<\/task-update>/);
+    
+      if (createMatch) {
+        const proposal = JSON.parse(createMatch[1]);
+        return text.replace(createMatch[0], `💡 Sent task proposal: "${proposal.title}"`);
+      } else if (updateMatch) {
+        const proposal = JSON.parse(updateMatch[1]);
+        return text.replace(updateMatch[0], `✏️ Sent update proposal for task: "${proposal.title}"`);
+      }
+      return text;
+    };
+
+
+    const formattedResponse = formatResponseToHtml(cleanTaskProposal(fullText));
 
 
     res.end();
@@ -532,9 +574,18 @@ app.put(endpointStructure + '/tasks/:id', authenticateUser, async (req, res) => 
   const { id } = req.params;
   const { title, description, date, priority, date_completed, recurrency } = req.body;
 
+  // Create an object with only the fields that are not "Unchanged"
+  const updates = {};
+  if (title !== 'Unchanged') updates.title = title;
+  if (description !== 'Unchanged') updates.description = description;
+  if (date !== 'Unchanged') updates.date = date;
+  if (priority !== 'Unchanged') updates.priority = priority;
+  if (date_completed !== 'Unchanged') updates.date_completed = date_completed;
+  if (recurrency !== 'Unchanged') updates.recurrency = recurrency;
+
   const { data, error } = await supabase
     .from('tasks')
-    .update({ title, description, date, priority, date_completed, recurrency })
+    .update(updates)
     .eq('id', id)
     .eq('user_id', req.user.id)
     .select();

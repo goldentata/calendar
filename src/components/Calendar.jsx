@@ -5,18 +5,112 @@ import interactionPlugin from '@fullcalendar/interaction'
 import rrulePlugin from '@fullcalendar/rrule'
 import timeGridPlugin from '@fullcalendar/timegrid' // Add this import
 
-import { useContext } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { TaskContext } from '../context/TaskContext'
 import { AuthContext } from '../context/AuthContext'
+import { LoaderContext } from '../context/LoaderContext'
+import js from '@eslint/js'
 
 const endpointStructure = import.meta.env.VITE_FRONTEND_ENDPOINT_STRUCTURE;
 function Calendar() {
   const { tasks, openTaskModal, openEmptyTaskModal, setTasks } = useContext(TaskContext)
   const { user } = useContext(AuthContext)
+  const { setIsLoaderOn } = useContext(LoaderContext)
   const isMobile = useWindowSize()
+
+  const  [ isContextOpen, setIsContextOpen ] = useState(false)
+  const [selectedTask, setSelectedTask] = useState(null)
+
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    console.log('Context Menu Position Updated:', contextMenuPosition);
+  }, [contextMenuPosition]);
+
+
   
+  const handleDelete = () => {
+    setIsLoaderOn(true);
+    fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}` 
+      },
+    })
+      .then(() => {
+        setTasks(prevTasks => prevTasks.filter(task => task.id != selectedTask.id))
+        setIsLoaderOn(false);
+      })
+      .catch(error => console.error('Error deleting task:', error))
+  }
+
+  const handleCompleted = (date_completed) => {
+    setIsLoaderOn(true);
+    const updatedTask = { date_completed: date_completed }
+    fetch(endpointStructure+`/tasks/${selectedTask.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.access_token}`
+      },
+      body: JSON.stringify(updatedTask)
+    })
+      .then(response => response.json())
+      .then(data => {
+        setTasks(prevTasks => prevTasks.map(task => (task.id == data.id ? data : task)))
+        setIsLoaderOn(false);
+      }
+      )
+      .catch(error => console.error('Error updating task:', error))
+  }
 
 
+
+  // Add context menu component
+  const ContextMenu = () => {
+    if (!isContextOpen) return null;
+    
+    return (
+      <div className='context-menu'
+        style={{
+          position: 'absolute',
+          left: contextMenuPosition.x,
+          top: contextMenuPosition.y,
+          zIndex: 1000
+        }}
+      >
+        <button id="complete" onClick={() => {
+          handleCompleted(new Date().toISOString());
+          setIsContextOpen(false);
+        }}> Complete </button>
+        <button 
+          id="edit"
+          onClick={() => {
+            if (selectedTask) {
+              openTaskModal({
+                id: selectedTask.id,
+                title: selectedTask.title,
+                date: selectedTask.startStr,
+                ...selectedTask.extendedProps
+              });
+              setIsContextOpen(false);
+            }
+          }}
+        >
+          Edit
+        </button>
+        <button 
+          id="delete" 
+          onClick={() => {
+            handleDelete();
+            setIsContextOpen(false);
+          }}
+        >
+          Remove
+        </button>
+      </div>
+    );
+  };
 
 
 const getEventClasses = (event) => {
@@ -133,6 +227,22 @@ const getEventTitle = (task) => {
               }
             }
           }
+          const event = info.event
+          info.el.addEventListener("contextmenu", (jsEvent)=>{
+            jsEvent.preventDefault();
+            setSelectedTask(info.event);
+            setContextMenuPosition({ x: jsEvent.pageX, y: jsEvent.pageY });
+            setIsContextOpen(true);
+              document.addEventListener("click", (clickEvent) =>{
+                  if(clickEvent.target.id!="edit" && clickEvent.target.id!="delete") {
+                    setIsContextOpen(false)
+                    // remove event listener after click
+                    document.removeEventListener("click", ()=>{});
+                  }
+                }
+              )
+              
+          })
         }}
         firstDay={1}
 
@@ -165,6 +275,7 @@ const getEventTitle = (task) => {
        
         height="85vh"
       /> 
+      <ContextMenu />
     </section>
   )
 }

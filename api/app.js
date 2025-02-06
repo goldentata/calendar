@@ -1,13 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const supabase = require('./config/db');
+const { createClient } = require('@supabase/supabase-js');
+
 const OpenAI = require('openai');
 const bodyParser = require('body-parser');
 const app = express();
 require('dotenv').config();
 const {Pinecone:PineconeClient} = require('@pinecone-database/pinecone')
 const client = new PineconeClient({ apiKey: process.env.PINECONE_API_KEY});
-  
+
+const twilio = require('twilio');
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
 
 
 
@@ -16,9 +21,31 @@ app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
 
 const endpointStructure = process.env.ENDPOINT_STRUCTURE;
+const supabase_url = process.env.SUPABASE_URL;
+const service_role_key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 console.log('Endpoint structure:', endpointStructure);
 
+
+// async function updateForce(){
+// const supabase = createClient(supabase_url, service_role_key, {
+//   auth: {
+//     autoRefreshToken: false,
+//     persistSession: false
+//   }
+// })
+// // Access auth admin api
+// const adminAuthClient = supabase.auth.admin
+// console.log(adminAuthClient)
+//   const testUserId = '5de686c6-08e1-49f4-9bec-1471478d4f6c'; // Replace with actual test user ID
+//   const testPhoneNumber = '+48500375155';   // Replace with test phone number
+//   const { data, error } = await supabase.auth.admin.updateUserById(
+//     testUserId, 
+//     { phone: testPhoneNumber }
+//   );
+//   if (error) throw error;
+// }
+// updateForce();
 
 // Configure OpenAI
 const openai = new OpenAI({
@@ -627,6 +654,9 @@ app.put(endpointStructure + '/tasks/:id/complete', authenticateUser, async (req,
   res.json(data[0]);
 });
 
+
+
+
 app.put(endpointStructure + '/tasks/:id/reschedule', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { date } = req.body;
@@ -757,6 +787,110 @@ app.delete(endpointStructure + '/notes/:id', authenticateUser, async (req, res) 
   }
 
   res.status(204).send();
+});
+
+
+
+
+
+app.get(endpointStructure + '/daily-notifications', async (req, res) => {
+  try {
+    // Get all users who have phone numbers
+
+      const supabase = createClient(supabase_url, service_role_key, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+    const { data: { users }, error } = await supabase.auth.admin.listUsers()
+
+
+
+    if (error) throw error;
+
+    const today = new Date().toISOString().split('T')[0];
+    let notificationsSent = 0;
+
+    // Process each user
+    for (const user of users) {
+
+      if(user.phone == null) continue;
+
+      // Get today's tasks for user
+      const { data: tasks, error: taskError } = await supabase
+        .from('tasks')
+        .select('title, date')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .or('date_completed.is.null,date_completed.eq.')  // Checks for both NULL and empty string
+
+
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday = yesterday.toISOString().split('T')[0];
+
+      // get outstanding tasks from yesterday
+      const { data: tasksYesterday, error: taskErrorYesterday } = await supabase
+        .from('tasks')
+        .select('title, date')
+        .eq('user_id', user.id)
+        .eq('date', yesterday)
+        .or('date_completed.is.null,date_completed.eq.')  // Checks for both NULL and empty string
+
+
+
+      if (taskError) continue;
+
+      // check if user.phone has + in front
+      if(user.phone[0] != '+'){
+        user.phone = '+' + user.phone;
+      }
+      
+
+      if (tasks.length > 0) {
+        // Create message text
+        
+
+       // if there are outstanding tasks from yesterday
+        if(tasksYesterday.length > 0){
+          var messageText = `Your tasks for today:\n${tasks
+            .map(task => `- ${task.title}`)
+            .join('\n')}\n\nYou also have outstanding tasks from yesterday:\n${tasksYesterday
+            .map(task => `- ${task.title}`)
+            .join('\n')}`;
+        } else{
+          var messageText = `Your tasks for today:\n${tasks
+            .map(task => `- ${task.title}`)
+            .join('\n')}`;
+        }
+         
+        // Send SMS
+        await twilioClient.messages.create({
+          body: messageText,
+          to: user.phone,
+          from: process.env.TWILIO_PHONE_NUMBER
+        });
+
+        notificationsSent++;
+
+        // Log notification
+        await supabase
+          .from('history_logs')
+          .insert([{
+            object_type: 'notification',
+            user_id: user.id,
+            action: 'sms_sent',
+            note: `Daily tasks notification sent (${tasks.length} tasks)`
+          }]);
+      }
+    }
+
+    res.json({ success: true, notifications_sent: notificationsSent });
+  } catch (error) {
+    console.error('Error sending notifications:', error);
+    res.status(500).json({ error: 'Failed to send notifications' });
+  }
 });
 
 // routing path

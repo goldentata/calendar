@@ -225,7 +225,51 @@ ol ol {
   gap: 0.5em;
   margin-top: 1em;
 }
+.context-menu {
+  position: fixed;
+  background: #444;
+  border: 1px solid #666;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  border-radius: 4px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+.context-menu button{
+  background: none;
+  border: none;
+  color: #fff;
+  padding: .5em 1em;
+  cursor: pointer;
 
+}
+.context-menu button:hover{
+  background: #333;
+}
+
+.context-menu.show {
+  display: block;
+}
+
+.context-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.context-menu li {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.context-menu li:hover {
+  background: #333
+}
+
+.context-menu a {
+  color: #fff;
+  text-decoration: none;
+}
 .task-proposal-buttons button:first-child {
   background: #3788d8;
 }
